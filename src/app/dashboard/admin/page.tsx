@@ -47,9 +47,20 @@ export default function AdminPage() {
     await load()
   }
 
+  async function sendInvoice(userId: string) {
+    const res = await fetch('/api/admin/invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    const data = await res.json()
+    if (data.success) alert(`Invoice ${data.invoiceNumber} sent!`)
+    else alert('Failed to send invoice')
+  }
+
   const paying = users.filter(u => u.plan !== 'free' && !u.isAdmin)
   const free = users.filter(u => u.plan === 'free' && !u.isAdmin)
-  const mrr = paying.filter(u => u.plan === 'monthly').length * 79 + paying.filter(u => u.plan === 'yearly').length * (599 / 12)
+  const revenue = paying.filter(u => u.plan === 'monthly').length * 79 + paying.filter(u => u.plan === 'yearly').length * 599
 
   if (error) return (
     <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
@@ -70,7 +81,7 @@ export default function AdminPage() {
           { label: 'Total Users',    value: users.filter(u => !u.isAdmin).length, color: '#a78bfa' },
           { label: 'Paying Clients', value: paying.length,                        color: '#34d399' },
           { label: 'Free Users',     value: free.length,                          color: '#9ca3af' },
-          { label: 'Est. MRR',       value: `€${mrr.toFixed(0)}`,                 color: '#f472b6' },
+          { label: 'Est. Revenue',    value: `€${revenue.toFixed(0)}`,             color: '#f472b6' },
         ].map(s => (
           <div key={s.label} style={{ ...card, padding: '1rem 1.25rem' }}>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{s.label}</div>
@@ -114,6 +125,7 @@ export default function AdminPage() {
                         {u.plan !== 'monthly' && <button onClick={() => setPlan(u.id, 'monthly')} style={{ ...ghostBtn, color: '#86efac' }}>Monthly</button>}
                         {u.plan !== 'yearly'  && <button onClick={() => setPlan(u.id, 'yearly')}  style={{ ...ghostBtn, color: '#93c5fd' }}>Yearly</button>}
                         {u.plan !== 'free'    && <button onClick={() => setPlan(u.id, 'free')}    style={{ ...ghostBtn, color: '#fca5a5' }}>Revoke</button>}
+                        {u.plan !== 'free'    && <button onClick={() => sendInvoice(u.id)}         style={{ ...ghostBtn, color: '#fbbf24' }}>Invoice</button>}
                       </div>
                     )}
                   </td>
