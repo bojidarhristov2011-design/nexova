@@ -22,24 +22,38 @@ const SECTIONS = [
     links: [
       { href: '/dashboard/crm',      label: 'CRM',      icon: '👥' },
       { href: '/dashboard/invoices', label: 'Invoices', icon: '🧾' },
+      { href: '/dashboard/calendar', label: 'Calendar', icon: '📆' },
     ],
   },
   {
-    label: 'AI Tools',
+    label: 'AI Writing',
     links: [
-      { href: '/dashboard/email-writer', label: 'Email Writer',   icon: '✉️' },
-      { href: '/dashboard/proposals',    label: 'Proposals',      icon: '📄' },
-      { href: '/dashboard/blog-writer',  label: 'Blog Writer',    icon: '✍️' },
-      { href: '/dashboard/reviews',      label: 'Reviews',        icon: '⭐' },
-      { href: '/dashboard/whatsapp',     label: 'WhatsApp',       icon: '💬' },
-      { href: '/dashboard/content',      label: 'Content Studio', icon: '✨' },
+      { href: '/dashboard/email-writer', label: 'Email Writer',    icon: '✉️' },
+      { href: '/dashboard/proposals',    label: 'Proposals',       icon: '📄' },
+      { href: '/dashboard/contracts',    label: 'Contracts',       icon: '📝' },
+      { href: '/dashboard/blog-writer',  label: 'Blog Writer',     icon: '✍️' },
+      { href: '/dashboard/reviews',      label: 'Review Replies',  icon: '⭐' },
+    ],
+  },
+  {
+    label: 'Outreach',
+    links: [
+      { href: '/dashboard/whatsapp',   label: 'WhatsApp',          icon: '💬' },
+      { href: '/dashboard/linkedin',   label: 'LinkedIn',          icon: '🔗' },
+      { href: '/dashboard/cold-email', label: 'Cold Email Series', icon: '📨' },
+    ],
+  },
+  {
+    label: 'Content',
+    links: [
+      { href: '/dashboard/content',   label: 'Content Studio', icon: '✨' },
+      { href: '/dashboard/scheduler', label: 'Scheduler',      icon: '📅' },
     ],
   },
   {
     label: 'Automate',
     links: [
-      { href: '/dashboard/scheduler', label: 'Scheduler',  icon: '📅' },
-      { href: '/dashboard/agents',    label: 'AI Agents',  icon: '◈' },
+      { href: '/dashboard/agents', label: 'AI Agents', icon: '◈' },
     ],
   },
 ]

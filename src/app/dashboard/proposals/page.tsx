@@ -10,8 +10,12 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 export default function ProposalsPage() {
   const [form, setForm] = usePersistedState('proposal_form', { clientName: '', projectTitle: '', projectDetails: '', price: '', currency: '€' })
   const [output, setOutput] = usePersistedState('proposal_output', '')
+  const [recipientEmail, setRecipientEmail] = usePersistedState('proposal_recipient', '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState('')
 
   function set(k: string, v: string) { setForm(f => ({ ...f, [k]: v })) }
 
@@ -33,6 +37,22 @@ export default function ProposalsPage() {
     navigator.clipboard.writeText(output)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function sendProposal() {
+    if (!recipientEmail || !output) return
+    setSending(true); setSendError('')
+    try {
+      const res = await fetch('/api/proposals/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: recipientEmail, subject: `Proposal: ${form.projectTitle || form.clientName}`, body: output }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setSent(true); setTimeout(() => setSent(false), 4000)
+    } catch (e: unknown) { setSendError(e instanceof Error ? e.message : 'Failed to send') }
+    finally { setSending(false) }
   }
 
   return (
@@ -87,15 +107,25 @@ export default function ProposalsPage() {
       </div>
 
       {output && (
-        <div style={card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Your Proposal</h2>
-            <button onClick={copy} style={{ background: copied ? 'rgba(34,197,94,0.1)' : 'var(--bg2)', color: copied ? '#86efac' : 'var(--muted)', border: `1px solid ${copied ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`, borderRadius: 8, padding: '0.375rem 0.875rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
-              {copied ? '✓ Copied' : 'Copy'}
+        <>
+          <div style={card}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Your Proposal</h2>
+              <button onClick={copy} style={{ background: copied ? 'rgba(34,197,94,0.1)' : 'var(--bg2)', color: copied ? '#86efac' : 'var(--muted)', border: `1px solid ${copied ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`, borderRadius: 8, padding: '0.375rem 0.875rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <pre style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: 'var(--muted)', fontSize: '0.875rem', margin: 0, fontFamily: 'inherit' }}>{output}</pre>
+          </div>
+          <div style={card}>
+            <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.875rem' }}>Send proposal to client</h2>
+            <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} placeholder="Client email address..." style={{ ...inp, marginBottom: '0.75rem' }} />
+            {sendError && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>{sendError}</div>}
+            <button onClick={sendProposal} disabled={!recipientEmail || sending} style={{ width: '100%', background: sent ? 'rgba(34,197,94,0.8)' : 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.75rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: !recipientEmail || sending ? 0.5 : 1 }}>
+              {sending ? 'Sending...' : sent ? '✓ Proposal Sent!' : '📤 Send Proposal'}
             </button>
           </div>
-          <pre style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: 'var(--muted)', fontSize: '0.875rem', margin: 0, fontFamily: 'inherit' }}>{output}</pre>
-        </div>
+        </>
       )}
     </div>
   )

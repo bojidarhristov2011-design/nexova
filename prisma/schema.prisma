@@ -22,6 +22,20 @@ model User {
   contacts       Contact[]
   scheduledPosts ScheduledPost[]
   settings       UserSettings?
+  tasks          Task[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  dueDate     String
+  dueTime     String?
+  completed   Boolean  @default(false)
+  category    String   @default("task")
+  createdAt   DateTime @default(now())
 }
 
 model UserSettings {
