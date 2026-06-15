@@ -131,7 +131,7 @@ export default async function LandingPage() {
             </div>
             <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>Cancel any time</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              {['All 10+ automation tools', 'Unlimited AI generations', 'Unlimited contacts & invoices', 'AI chatbots with embed code', 'Email support'].map(item => (
+              {['All 14+ automation tools', 'Unlimited AI generations', 'Unlimited contacts & invoices', 'AI chatbots with embed code', 'Email support'].map(item => (
                 <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>
                   <span style={{ color: '#7c3aed', flexShrink: 0 }}>✓</span> {item}
                 </li>

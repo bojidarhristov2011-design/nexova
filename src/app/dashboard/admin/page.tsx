@@ -49,7 +49,7 @@ export default function AdminPage() {
 
   const paying = users.filter(u => u.plan !== 'free' && !u.isAdmin)
   const free = users.filter(u => u.plan === 'free' && !u.isAdmin)
-  const mrr = paying.filter(u => u.plan === 'monthly').length * 99 + paying.filter(u => u.plan === 'yearly').length * (990 / 12)
+  const mrr = paying.filter(u => u.plan === 'monthly').length * 79 + paying.filter(u => u.plan === 'yearly').length * (599 / 12)
 
   if (error) return (
     <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>

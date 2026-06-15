@@ -8,7 +8,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const dbUser = await db.user.findUnique({ where: { id: session.user.id }, select: { isAdmin: true } })
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { isAdmin: true, plan: true, trialEndsAt: true },
+  })
+
+  if (!dbUser?.isAdmin && dbUser?.plan === 'free') {
+    const trialEnd = dbUser.trialEndsAt ? new Date(dbUser.trialEndsAt) : null
+    if (!trialEnd || trialEnd < new Date()) {
+      redirect('/upgrade')
+    }
+  }
 
   return (
     <div className="flex h-full" style={{ background: 'var(--bg)' }}>
