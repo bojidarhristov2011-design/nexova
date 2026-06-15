@@ -1,0 +1,5 @@
+const Database = require('better-sqlite3')
+const db = new Database('C:/Users/x/nexova/prisma/dev.db')
+const result = db.prepare("DELETE FROM User WHERE email = 'bozhidarhristov2011@gmail.com'").run()
+console.log('Deleted fake account:', result.changes, 'row(s)')
+db.close()

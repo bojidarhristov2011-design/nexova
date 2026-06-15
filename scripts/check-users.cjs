@@ -1,0 +1,5 @@
+const Database = require('better-sqlite3')
+const db = new Database('C:/Users/x/nexova/prisma/dev.db')
+const rows = db.prepare('SELECT email, isAdmin, plan FROM User').all()
+console.log(JSON.stringify(rows, null, 2))
+db.close()

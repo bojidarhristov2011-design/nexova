@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  password       String
+  name           String?
+  isAdmin        Boolean         @default(false)
+  plan           String          @default("free") // free | monthly | yearly
+  planStarted    DateTime?
+  trialEndsAt    DateTime?
+  createdAt      DateTime        @default(now())
+  agents         Agent[]
+  invoices       Invoice[]
+  contacts       Contact[]
+  scheduledPosts ScheduledPost[]
+  settings       UserSettings?
+}
+
+model UserSettings {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessName    String  @default("")
+  businessDesc    String  @default("")
+  telegramToken   String  @default("")
+  telegramChannel String  @default("")
+  tiktokHandle    String  @default("")
+  contentTone     String  @default("professional")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Agent {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  instructions  String         @default("You are a helpful assistant.")
+  greeting      String         @default("Hello! How can I help you today?")
+  model         String         @default("gemini-2.0-flash")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  agentId   String
+  agent     Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  sessionId String    @default(cuid())
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invoiceNumber String
+  clientName    String
+  clientEmail   String
+  items         String   // JSON: [{description, quantity, unitPrice}]
+  subtotal      Float
+  tax           Float    @default(0)
+  total         Float
+  currency      String   @default("USD")
+  status        String   @default("draft") // draft | sent | paid
+  dueDate       String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  status    String   @default("lead") // lead | customer | lost
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScheduledPost {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform    String   @default("telegram")
+  content     String
+  scheduledAt DateTime
+  status      String   @default("pending") // pending | sent | failed
+  createdAt   DateTime @default(now())
+}
