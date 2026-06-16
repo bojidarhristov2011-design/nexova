@@ -16,6 +16,7 @@ model User {
   plan           String          @default("free") // free | monthly | yearly
   planStarted    DateTime?
   trialEndsAt    DateTime?
+  blocked        Boolean         @default(false)
   createdAt      DateTime        @default(now())
   agents         Agent[]
   invoices       Invoice[]

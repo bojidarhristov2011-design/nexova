@@ -14,7 +14,7 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, email: true, name: true, plan: true,
-      isAdmin: true, planStarted: true, createdAt: true,
+      isAdmin: true, blocked: true, planStarted: true, trialEndsAt: true, createdAt: true,
       _count: { select: { agents: true, invoices: true, contacts: true } },
     },
   })
