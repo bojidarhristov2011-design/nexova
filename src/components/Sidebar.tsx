@@ -20,9 +20,12 @@ const SECTIONS = [
   {
     label: 'Business',
     links: [
-      { href: '/dashboard/crm',      label: 'CRM',      icon: '👥' },
-      { href: '/dashboard/invoices', label: 'Invoices', icon: '🧾' },
-      { href: '/dashboard/calendar', label: 'Calendar', icon: '📆' },
+      { href: '/dashboard/crm',          label: 'CRM',               icon: '👥' },
+      { href: '/dashboard/invoices',      label: 'Invoices',          icon: '🧾' },
+      { href: '/dashboard/quotes',        label: 'Quote Generator',   icon: '💰' },
+      { href: '/dashboard/calendar',      label: 'Calendar',          icon: '📆' },
+      { href: '/dashboard/meeting-notes', label: 'Meeting Notes',     icon: '📋' },
+      { href: '/dashboard/onboarding',    label: 'Client Onboarding', icon: '🚀' },
     ],
   },
   {
@@ -31,6 +34,9 @@ const SECTIONS = [
       { href: '/dashboard/email-writer', label: 'Email Writer',    icon: '✉️' },
       { href: '/dashboard/proposals',    label: 'Proposals',       icon: '📄' },
       { href: '/dashboard/contracts',    label: 'Contracts',       icon: '📝' },
+      { href: '/dashboard/bio-writer',   label: 'Business Bio',    icon: '🪪' },
+      { href: '/dashboard/faq',          label: 'FAQ Generator',   icon: '❓' },
+      { href: '/dashboard/legal',        label: 'Legal Docs',      icon: '⚖️' },
       { href: '/dashboard/blog-writer',  label: 'Blog Writer',     icon: '✍️' },
       { href: '/dashboard/reviews',      label: 'Review Replies',  icon: '⭐' },
     ],
@@ -39,6 +45,7 @@ const SECTIONS = [
     label: 'Outreach',
     links: [
       { href: '/dashboard/whatsapp',   label: 'WhatsApp',          icon: '💬' },
+      { href: '/dashboard/reminders',  label: 'Appt. Reminders',   icon: '🔔' },
       { href: '/dashboard/linkedin',   label: 'LinkedIn',          icon: '🔗' },
       { href: '/dashboard/cold-email', label: 'Cold Email Series', icon: '📨' },
     ],
@@ -46,8 +53,9 @@ const SECTIONS = [
   {
     label: 'Content',
     links: [
-      { href: '/dashboard/content',   label: 'Content Studio', icon: '✨' },
-      { href: '/dashboard/scheduler', label: 'Scheduler',      icon: '📅' },
+      { href: '/dashboard/captions',  label: 'Caption Generator', icon: '📱' },
+      { href: '/dashboard/content',   label: 'Content Studio',    icon: '✨' },
+      { href: '/dashboard/scheduler', label: 'Scheduler',         icon: '📅' },
     ],
   },
   {

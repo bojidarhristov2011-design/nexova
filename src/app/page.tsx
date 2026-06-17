@@ -8,15 +8,23 @@ const FEATURES = [
   { icon: '🤖', title: 'AI Chatbots',           desc: 'Custom agents trained on your business. Embed on any website.' },
   { icon: '👥', title: 'CRM',                    desc: 'Track every lead and customer. Know exactly who to follow up with.' },
   { icon: '🧾', title: 'Invoices',               desc: 'Create and email professional invoices in seconds. Get paid faster.' },
+  { icon: '💰', title: 'Quote Generator',        desc: 'Send professional price quotes before the job starts. Win more clients.' },
   { icon: '📆', title: 'Calendar & Tasks',       desc: 'Schedule meetings, deadlines, and reminders. Never miss a thing.' },
+  { icon: '📋', title: 'AI Meeting Notes',       desc: 'Paste any transcript — get summary, decisions, and action items instantly.' },
+  { icon: '🚀', title: 'Client Onboarding',      desc: 'Generate a full onboarding plan, welcome message, and checklist for every new client.' },
   { icon: '✉️', title: 'Email Writer',           desc: 'AI writes your sales emails, follow-ups, and cold outreach — and sends them.' },
   { icon: '📄', title: 'Proposals',              desc: 'Turn a client brief into a full professional proposal and send it instantly.' },
   { icon: '📝', title: 'Contract Generator',     desc: 'Generate professional contracts ready to sign in seconds.' },
+  { icon: '🪪', title: 'Business Bio Writer',    desc: 'Get 3 versions of your About Us — social bio, website header, and full page.' },
+  { icon: '❓', title: 'FAQ Generator',          desc: 'Generate 10 ready-to-publish FAQs for your website or landing page.' },
+  { icon: '⚖️', title: 'Legal Docs',            desc: 'Privacy Policy and Terms & Conditions generated in seconds. Stay compliant.' },
   { icon: '✍️', title: 'Blog & SEO Writer',     desc: 'Full blog posts optimised for Google. Generated in seconds.' },
   { icon: '⭐', title: 'Review Responder',       desc: 'AI replies to your Google, Facebook, Trustpilot reviews instantly.' },
   { icon: '💬', title: 'WhatsApp Messages',      desc: 'Follow-ups, promos, reminders — ready to send in one click.' },
+  { icon: '🔔', title: 'Appointment Reminders',  desc: '3 reminder messages per client — 24h before, day of, and no-show follow-up.' },
   { icon: '🔗', title: 'LinkedIn Outreach',      desc: 'AI-written LinkedIn messages that get replies. Connection requests to sales.' },
   { icon: '📨', title: 'Cold Email Sequences',   desc: '3-email follow-up series written by AI. Day 1, 3, and 7 — done.' },
+  { icon: '📱', title: 'Caption Generator',      desc: '3 scroll-stopping captions with hashtags for Instagram, TikTok, or LinkedIn.' },
   { icon: '✨', title: 'Content Studio',         desc: 'Telegram posts and TikTok scripts for your business every day.' },
   { icon: '📅', title: 'Post Scheduler',         desc: 'Schedule posts once and they publish automatically.' },
 ]
@@ -85,7 +93,7 @@ export default async function LandingPage() {
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2rem', marginBottom: '1px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', textAlign: 'center', gap: '1rem' }}>
           {[
-            { num: '14+', label: 'Automation tools' },
+            { num: '22+', label: 'Automation tools' },
             { num: '3 days', label: 'Free trial, no card' },
             { num: '< 5 min', label: 'Setup time' },
           ].map(s => (
@@ -131,7 +139,7 @@ export default async function LandingPage() {
             </div>
             <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>Cancel any time</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              {['All 14+ automation tools', 'Unlimited AI generations', 'Unlimited contacts & invoices', 'AI chatbots with embed code', 'Email support'].map(item => (
+              {['All 22+ automation tools', 'Unlimited AI generations', 'Unlimited contacts & invoices', 'AI chatbots with embed code', 'Email support'].map(item => (
                 <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>
                   <span style={{ color: '#7c3aed', flexShrink: 0 }}>✓</span> {item}
                 </li>
