@@ -29,7 +29,16 @@ export async function PATCH(request: Request) {
   const me = await db.user.findUnique({ where: { id: session.user.id } })
   if (!me?.isAdmin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { userId, plan } = await request.json()
+  const { userId, plan, extendTrialDays } = await request.json()
+
+  if (extendTrialDays) {
+    const user = await db.user.findUnique({ where: { id: userId }, select: { trialEndsAt: true } })
+    const base = user?.trialEndsAt && user.trialEndsAt > new Date() ? user.trialEndsAt : new Date()
+    const newTrialEnd = new Date(base.getTime() + extendTrialDays * 24 * 60 * 60 * 1000)
+    const updated = await db.user.update({ where: { id: userId }, data: { trialEndsAt: newTrialEnd } })
+    return NextResponse.json(updated)
+  }
+
   const updated = await db.user.update({
     where: { id: userId },
     data: { plan, planStarted: plan !== 'free' ? new Date() : null },

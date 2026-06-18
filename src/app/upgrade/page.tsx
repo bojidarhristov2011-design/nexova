@@ -5,7 +5,9 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import { NexovaLogo } from '@/components/NexovaLogo'
 
-const REVOLUT_TAG = '@bojidarhristov' // your Revolut tag
+const REVOLUT_TAG = '@bojidarhristov' // ← replace with dad's actual Revolut tag
+const DAD_IBAN = 'IBAN: FILL IN DADS IBAN HERE' // ← replace with dad's actual IBAN
+const DAD_NAME = 'FILL IN DADS FULL NAME' // ← replace with dad's name on account
 const CONTACT_EMAIL = 'bojidarhristov2011@gmail.com'
 
 export default async function UpgradePage() {
@@ -39,7 +41,7 @@ export default async function UpgradePage() {
           Choose a plan to continue
         </h1>
         <p style={{ color: '#64748b', fontSize: '1rem', lineHeight: 1.7, margin: 0 }}>
-          Your 3-day free trial has expired. Pick a plan, pay via Revolut or bank transfer, and your account will be activated within a few hours.
+          Your free trial has expired. Pick a plan, pay via Revolut or bank transfer, and your account will be activated within a few hours.
         </p>
       </div>
 
@@ -101,12 +103,14 @@ export default async function UpgradePage() {
         <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 1rem' }}>How to pay</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
           <div>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a78bfa', margin: '0 0 0.375rem' }}>Revolut</p>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>Send to <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{REVOLUT_TAG}</span></p>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a78bfa', margin: '0 0 0.375rem' }}>💚 Revolut (easiest)</p>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 0.25rem' }}>Open Revolut → Search by tag:</p>
+            <p style={{ fontSize: '1rem', color: '#e2e8f0', fontWeight: 700, margin: 0 }}>{REVOLUT_TAG}</p>
           </div>
           <div>
-            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a78bfa', margin: '0 0 0.375rem' }}>Bank transfer</p>
-            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0 }}>Email us and we'll send our bank details</p>
+            <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#a78bfa', margin: '0 0 0.375rem' }}>🏦 Bank transfer</p>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 0 0.25rem' }}>Account holder: <span style={{ color: '#e2e8f0' }}>{DAD_NAME}</span></p>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>{DAD_IBAN}</p>
           </div>
         </div>
         <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(124,58,237,0.07)', borderRadius: 10, fontSize: '0.8125rem', color: '#64748b', lineHeight: 1.6 }}>

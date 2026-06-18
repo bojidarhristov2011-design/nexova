@@ -71,6 +71,15 @@ export default function AdminPage() {
     else alert('Failed to send invoice')
   }
 
+  async function extendTrial(userId: string, days: number) {
+    await fetch('/api/admin/users', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, extendTrialDays: days }),
+    })
+    await load()
+  }
+
   async function notifyTrials() {
     setNotifying(true); setNotifyResult('')
     const res = await fetch('/api/admin/notify-trials', { method: 'POST' })
@@ -192,6 +201,7 @@ export default function AdminPage() {
                           {u.plan !== 'yearly'  && <button onClick={() => setPlan(u.id, 'yearly')}  style={{ ...ghostBtn, color: '#93c5fd' }}>Yearly</button>}
                           {u.plan !== 'free'    && <button onClick={() => setPlan(u.id, 'free')}    style={{ ...ghostBtn, color: '#fca5a5' }}>Revoke</button>}
                           {u.plan !== 'free'    && <button onClick={() => sendInvoice(u.id)}         style={{ ...ghostBtn, color: '#fbbf24' }}>Invoice</button>}
+                          <button onClick={() => extendTrial(u.id, 30)} style={{ ...ghostBtn, color: '#c4b5fd', borderColor: 'rgba(167,139,250,0.3)' }}>+30d Trial</button>
                           {!u.blocked
                             ? <button onClick={() => setBlocked(u.id, true)}  style={{ ...ghostBtn, color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }}>Block</button>
                             : <button onClick={() => setBlocked(u.id, false)} style={{ ...ghostBtn, color: '#86efac', borderColor: 'rgba(34,197,94,0.3)' }}>Unblock</button>

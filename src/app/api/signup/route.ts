@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email already in use' }, { status: 409 })
     }
     const hashed = await bcrypt.hash(password, 12)
-    const trialEndsAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    const trialEndsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     await db.user.create({ data: { email, password: hashed, name: name || null, trialEndsAt } })
     return NextResponse.json({ success: true })
   } catch {
