@@ -17,9 +17,13 @@ export default function ContractsPage() {
   const [currency, setCurrency] = usePersistedState('contract_currency', 'EUR')
   const [deliveryDays, setDeliveryDays] = usePersistedState('contract_days', '14')
   const [result, setResult] = usePersistedState('contract_result', '')
+  const [recipientEmail, setRecipientEmail] = usePersistedState('contract_recipient', '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [sendError, setSendError] = useState('')
 
   async function generate() {
     if (!contractType || !clientName || !projectDesc) return
@@ -31,6 +35,18 @@ export default function ContractsPage() {
       setResult(data.content)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Failed') }
     finally { setLoading(false) }
+  }
+
+  async function sendContract() {
+    if (!recipientEmail || !result) return
+    setSending(true); setSendError('')
+    try {
+      const res = await fetch('/api/contracts/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: recipientEmail, subject: `Contract for ${clientName}`, body: result }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setSent(true); setTimeout(() => setSent(false), 4000)
+    } catch (e: unknown) { setSendError(e instanceof Error ? e.message : 'Failed') }
+    finally { setSending(false) }
   }
 
   return (
@@ -63,6 +79,17 @@ export default function ContractsPage() {
           <button onClick={generate} disabled={!contractType || !clientName || !projectDesc || loading} style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(124,58,237,0.25)', opacity: !contractType || !clientName || !projectDesc || loading ? 0.5 : 1 }}>
             {loading ? '📄 Generating...' : '📄 Generate Contract'}
           </button>
+
+          {result && (
+            <div style={{ ...card, marginTop: 0 }}>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.875rem' }}>Send contract to client</h2>
+              <input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} placeholder="Client email address..." style={{ ...input, marginBottom: '0.75rem' }} />
+              {sendError && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.8125rem', marginBottom: '0.75rem' }}>{sendError}</div>}
+              <button onClick={sendContract} disabled={!recipientEmail || sending} style={{ width: '100%', background: sent ? 'rgba(34,197,94,0.8)' : 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.75rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: !recipientEmail || sending ? 0.5 : 1 }}>
+                {sending ? 'Sending...' : sent ? '✓ Contract Sent!' : '📤 Send Contract'}
+              </button>
+            </div>
+          )}
         </div>
 
         {result && (

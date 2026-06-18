@@ -50,7 +50,7 @@ export default async function UpgradePage() {
         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '2rem' }}>
           <p style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Monthly</p>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€79</span>
+            <span style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€20</span>
             <span style={{ color: '#475569', fontSize: '0.9rem' }}>/month</span>
           </div>
           <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 1.5rem' }}>Billed monthly · Cancel any time</p>
@@ -62,10 +62,10 @@ export default async function UpgradePage() {
             ))}
           </ul>
           <a
-            href={`mailto:${CONTACT_EMAIL}?subject=Nexova Monthly - ${session.user.email}&body=Hi, I want the Monthly plan (€79/month). My Nexova account email is: ${session.user.email}%0A%0AI will send the payment via Revolut or bank transfer.`}
+            href={`mailto:${CONTACT_EMAIL}?subject=Nexova Monthly - ${session.user.email}&body=Hi, I want the Monthly plan (€20/month). My Nexova account email is: ${session.user.email}%0A%0AI will send the payment via Revolut or bank transfer.`}
             style={{ display: 'block', textAlign: 'center', background: 'rgba(124,58,237,0.12)', color: '#a78bfa', textDecoration: 'none', borderRadius: 10, padding: '0.8rem', fontSize: '0.9rem', fontWeight: 600, border: '1px solid rgba(124,58,237,0.2)' }}
           >
-            Choose Monthly — €79/mo
+            Choose Monthly — €20/mo
           </a>
         </div>
 
@@ -76,10 +76,10 @@ export default async function UpgradePage() {
           </div>
           <p style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Yearly</p>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€599</span>
+            <span style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€200</span>
             <span style={{ color: '#475569', fontSize: '0.9rem' }}>/year</span>
           </div>
-          <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 1.5rem' }}>One payment · Save €349 vs monthly</p>
+          <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 1.5rem' }}>One payment · Save €40 vs monthly</p>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {['Everything in Monthly', 'Priority support', 'Early access to new features', 'Onboarding call included', "Lock in today's price forever"].map(item => (
               <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>
@@ -88,10 +88,10 @@ export default async function UpgradePage() {
             ))}
           </ul>
           <a
-            href={`mailto:${CONTACT_EMAIL}?subject=Nexova Yearly - ${session.user.email}&body=Hi, I want the Yearly plan (€599/year). My Nexova account email is: ${session.user.email}%0A%0AI will send the payment via Revolut or bank transfer.`}
+            href={`mailto:${CONTACT_EMAIL}?subject=Nexova Yearly - ${session.user.email}&body=Hi, I want the Yearly plan (€200/year). My Nexova account email is: ${session.user.email}%0A%0AI will send the payment via Revolut or bank transfer.`}
             style={{ display: 'block', textAlign: 'center', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '0.8rem', fontSize: '0.9rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(124,58,237,0.35)' }}
           >
-            Choose Yearly — €599/yr
+            Choose Yearly — €200/yr
           </a>
         </div>
       </div>

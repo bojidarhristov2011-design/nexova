@@ -21,7 +21,8 @@ model User {
   agents         Agent[]
   invoices       Invoice[]
   contacts       Contact[]
-  scheduledPosts ScheduledPost[]
+  scheduledPosts  ScheduledPost[]
+  scheduledEmails ScheduledEmail[]
   settings       UserSettings?
   tasks          Task[]
 }
@@ -126,5 +127,18 @@ model ScheduledPost {
   content     String
   scheduledAt DateTime
   status      String   @default("pending") // pending | sent | failed
+  createdAt   DateTime @default(now())
+}
+
+model ScheduledEmail {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  to          String
+  subject     String
+  body        String
+  scheduledAt DateTime
+  status      String   @default("pending") // pending | sent | failed
+  label       String?  // e.g. "Day 3 follow-up"
   createdAt   DateTime @default(now())
 }

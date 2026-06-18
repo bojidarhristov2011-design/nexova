@@ -85,7 +85,7 @@ export default async function LandingPage() {
               Already a member
             </Link>
           </div>
-          <p style={{ color: '#334155', fontSize: '0.8125rem', margin: 0 }}>3 days free, then €79/month or €599/year</p>
+          <p style={{ color: '#334155', fontSize: '0.8125rem', margin: 0 }}>3 days free, then €20/month or €200/year</p>
         </div>
       </section>
 
@@ -134,7 +134,7 @@ export default async function LandingPage() {
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '2rem' }}>
             <p style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Monthly</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€79</span>
+              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€20</span>
               <span style={{ color: '#475569', fontSize: '0.9rem' }}>/month</span>
             </div>
             <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>Cancel any time</p>
@@ -157,10 +157,10 @@ export default async function LandingPage() {
             </div>
             <p style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Yearly</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€599</span>
+              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€200</span>
               <span style={{ color: '#475569', fontSize: '0.9rem' }}>/year</span>
             </div>
-            <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>€49.92/month — save €349 vs monthly</p>
+            <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>€16.67/month — save €40 vs monthly</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
               {['Everything in Monthly', 'Priority support', 'Early access to new features', 'Onboarding call included', 'Lock in today\'s price forever'].map(item => (
                 <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>

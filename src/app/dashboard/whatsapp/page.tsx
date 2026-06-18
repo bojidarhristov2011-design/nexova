@@ -27,6 +27,7 @@ export default function WhatsAppPage() {
   const [type, setType] = usePersistedState('wa_type', 'followup')
   const [tone, setTone] = usePersistedState('wa_tone', 'friendly')
   const [context, setContext] = usePersistedState('wa_context', '')
+  const [phone, setPhone] = usePersistedState('wa_phone', '')
   const [output, setOutput] = usePersistedState('wa_output', '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -48,6 +49,12 @@ export default function WhatsAppPage() {
     navigator.clipboard.writeText(output)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function openWhatsApp() {
+    const cleaned = phone.replace(/\s+/g, '').replace(/^0/, '').replace(/^\+/, '')
+    const encoded = encodeURIComponent(output)
+    window.open(`https://wa.me/${cleaned}?text=${encoded}`, '_blank')
   }
 
   return (
@@ -114,12 +121,27 @@ export default function WhatsAppPage() {
             </button>
           </div>
           {/* WhatsApp bubble preview */}
-          <div style={{ background: '#0a1628', borderRadius: 12, padding: '1rem', marginBottom: '0.75rem' }}>
+          <div style={{ background: '#0a1628', borderRadius: 12, padding: '1rem', marginBottom: '1rem' }}>
             <div style={{ background: '#005c4b', color: '#e9edef', borderRadius: '12px 12px 0 12px', padding: '0.625rem 0.875rem', maxWidth: '85%', marginLeft: 'auto', fontSize: '0.875rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
               {output}
             </div>
           </div>
-          <p style={{ color: 'var(--dim)', fontSize: '0.75rem', margin: 0 }}>Preview shown above. Click Copy to use the text.</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="Phone number e.g. +44 7700 900000"
+              style={{ ...inp, flex: 1 }}
+            />
+            <button
+              onClick={openWhatsApp}
+              disabled={!phone}
+              style={{ background: '#25d366', color: '#fff', border: 'none', borderRadius: 10, padding: '0 1.25rem', fontSize: '0.875rem', fontWeight: 700, cursor: phone ? 'pointer' : 'not-allowed', fontFamily: 'inherit', whiteSpace: 'nowrap', opacity: phone ? 1 : 0.5 }}
+            >
+              Open in WhatsApp ↗
+            </button>
+          </div>
+          <p style={{ color: 'var(--dim)', fontSize: '0.75rem', margin: '0.5rem 0 0' }}>Opens WhatsApp with the message pre-filled. You just press send.</p>
         </div>
       )}
     </div>

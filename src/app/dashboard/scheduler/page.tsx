@@ -11,6 +11,15 @@ interface ScheduledPost {
   createdAt: string
 }
 
+interface ScheduledEmail {
+  id: string
+  to: string
+  subject: string
+  scheduledAt: string
+  status: string
+  label: string | null
+}
+
 const statusStyle = (s: string): React.CSSProperties => ({
   pending: { background: 'rgba(234,179,8,0.12)',  color: '#fde047', border: '1px solid rgba(234,179,8,0.25)' },
   sent:    { background: 'rgba(34,197,94,0.12)',  color: '#86efac', border: '1px solid rgba(34,197,94,0.25)' },
@@ -30,6 +39,7 @@ function toLocalDatetimeValue(d: Date) {
 
 export default function SchedulerPage() {
   const [posts, setPosts] = useState<ScheduledPost[]>([])
+  const [emails, setEmails] = useState<ScheduledEmail[]>([])
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
@@ -38,12 +48,15 @@ export default function SchedulerPage() {
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState('')
   const [error, setError] = useState('')
+  const [tab, setTab] = useState<'posts' | 'emails'>('posts')
 
   const load = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/scheduler')
-    const data = await res.json()
-    setPosts(Array.isArray(data) ? data : [])
+    const [postsRes, emailsRes] = await Promise.all([fetch('/api/scheduler'), fetch('/api/scheduled-emails')])
+    const postsData = await postsRes.json()
+    const emailsData = await emailsRes.json()
+    setPosts(Array.isArray(postsData) ? postsData : [])
+    setEmails(Array.isArray(emailsData) ? emailsData : [])
     setLoading(false)
   }, [])
 
@@ -75,19 +88,18 @@ export default function SchedulerPage() {
   }
 
   async function sendDue() {
-    setRunning(true)
-    setRunResult('')
-    setError('')
+    setRunning(true); setRunResult(''); setError('')
     try {
-      const res = await fetch('/api/scheduler/send', { method: 'POST' })
-      const data = await res.json()
-      setRunResult(`Processed ${data.processed} post${data.processed !== 1 ? 's' : ''}`)
+      const [postsRes, emailsRes] = await Promise.all([
+        fetch('/api/scheduler/send', { method: 'POST' }),
+        fetch('/api/scheduled-emails', { method: 'PATCH' }),
+      ])
+      const postsData = await postsRes.json()
+      const emailsData = await emailsRes.json()
+      setRunResult(`Sent ${postsData.processed || 0} post(s) and ${emailsData.sent || 0} email(s)`)
       await load()
-    } catch {
-      setError('Failed to run scheduler.')
-    } finally {
-      setRunning(false)
-    }
+    } catch { setError('Failed to run scheduler.') }
+    finally { setRunning(false) }
   }
 
   async function del(id: string) {
@@ -96,19 +108,36 @@ export default function SchedulerPage() {
     await load()
   }
 
-  const pending = posts.filter(p => p.status === 'pending')
-  const done = posts.filter(p => p.status !== 'pending')
+  async function delEmail(id: string) {
+    if (!confirm('Delete this scheduled email?')) return
+    await fetch('/api/scheduled-emails', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    await load()
+  }
+
+  const pendingPosts = posts.filter(p => p.status === 'pending')
+  const donePosts = posts.filter(p => p.status !== 'pending')
+  const pendingEmails = emails.filter(e => e.status === 'pending')
+  const doneEmails = emails.filter(e => e.status !== 'pending')
 
   return (
     <div style={{ padding: '2.5rem 2rem', maxWidth: 860, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>Post Scheduler</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Schedule Telegram posts to go out automatically</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>Scheduler</h1>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Schedule posts and cold email follow-ups to send automatically</p>
         </div>
-        <button onClick={sendDue} disabled={running || pending.length === 0} style={{ ...ghostBtn, opacity: pending.length === 0 ? 0.5 : 1 }}>
-          {running ? 'Sending...' : `▶ Send Due Posts (${pending.length})`}
+        <button onClick={sendDue} disabled={running} style={{ ...ghostBtn }}>
+          {running ? 'Sending...' : `▶ Send All Due (${pendingPosts.length + pendingEmails.length})`}
         </button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+        {[{ key: 'posts', label: `📅 Posts (${pendingPosts.length})` }, { key: 'emails', label: `📧 Cold Emails (${pendingEmails.length})` }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key as 'posts' | 'emails')} style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid', borderColor: tab === t.key ? 'var(--accent)' : 'var(--border)', background: tab === t.key ? 'rgba(124,58,237,0.12)' : 'var(--bg2)', color: tab === t.key ? '#c4b5fd' : 'var(--muted)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 10, padding: '0.875rem 1rem', fontSize: '0.9rem', marginBottom: '1.25rem' }}>{error}</div>}
@@ -144,23 +173,20 @@ export default function SchedulerPage() {
         </div>
       </div>
 
-      {/* Pending posts */}
       {loading ? (
         <p style={{ color: 'var(--dim)', textAlign: 'center', padding: '2rem' }}>Loading...</p>
-      ) : (
+      ) : tab === 'posts' ? (
         <>
-          {pending.length > 0 && (
+          {pendingPosts.length > 0 && (
             <>
-              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Scheduled ({pending.length})</h2>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Scheduled ({pendingPosts.length})</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
-                {pending.map(p => (
+                {pendingPosts.map(p => (
                   <div key={p.id} style={{ ...card, padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                         <span style={statusStyle(p.status)}>{p.status}</span>
-                        <span style={{ color: 'var(--dim)', fontSize: '0.8rem' }}>
-                          {p.platform} · {new Date(p.scheduledAt).toLocaleString()}
-                        </span>
+                        <span style={{ color: 'var(--dim)', fontSize: '0.8rem' }}>{p.platform} · {new Date(p.scheduledAt).toLocaleString()}</span>
                       </div>
                       <p style={{ color: 'var(--text)', fontSize: '0.875rem', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.content.slice(0, 200)}{p.content.length > 200 ? '…' : ''}</p>
                     </div>
@@ -170,12 +196,11 @@ export default function SchedulerPage() {
               </div>
             </>
           )}
-
-          {done.length > 0 && (
+          {donePosts.length > 0 && (
             <>
-              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>History ({done.length})</h2>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>History</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                {done.map(p => (
+                {donePosts.map(p => (
                   <div key={p.id} style={{ ...card, padding: '0.875rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', opacity: 0.7 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
@@ -190,12 +215,61 @@ export default function SchedulerPage() {
               </div>
             </>
           )}
-
           {posts.length === 0 && (
             <div style={{ ...card, textAlign: 'center', padding: '3rem 2rem' }}>
               <p style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📅</p>
-              <p style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 6 }}>No scheduled posts</p>
-              <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>Write a post above and pick a time — it'll send automatically.</p>
+              <p style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 6 }}>No scheduled posts yet</p>
+              <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>Write a post above and pick a time.</p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {pendingEmails.length > 0 && (
+            <>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Scheduled ({pendingEmails.length})</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '1.5rem' }}>
+                {pendingEmails.map(e => (
+                  <div key={e.id} style={{ ...card, padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                        <span style={statusStyle(e.status)}>{e.status}</span>
+                        <span style={{ color: 'var(--dim)', fontSize: '0.8rem' }}>{new Date(e.scheduledAt).toLocaleString()}</span>
+                        {e.label && <span style={{ color: '#a78bfa', fontSize: '0.75rem', fontWeight: 600 }}>{e.label}</span>}
+                      </div>
+                      <p style={{ color: 'var(--text)', fontSize: '0.875rem', margin: '0 0 2px', fontWeight: 500 }}>To: {e.to}</p>
+                      <p style={{ color: 'var(--muted)', fontSize: '0.8125rem', margin: 0 }}>{e.subject}</p>
+                    </div>
+                    <button onClick={() => delEmail(e.id)} style={{ ...ghostBtn, color: '#fca5a5', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {doneEmails.length > 0 && (
+            <>
+              <h2 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>History</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                {doneEmails.map(e => (
+                  <div key={e.id} style={{ ...card, padding: '0.875rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', opacity: 0.7 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                        <span style={statusStyle(e.status)}>{e.status}</span>
+                        <span style={{ color: 'var(--dim)', fontSize: '0.8rem' }}>{new Date(e.scheduledAt).toLocaleString()}</span>
+                      </div>
+                      <p style={{ color: 'var(--muted)', fontSize: '0.8125rem', margin: 0 }}>To: {e.to} · {e.subject}</p>
+                    </div>
+                    <button onClick={() => delEmail(e.id)} style={{ ...ghostBtn, color: '#fca5a5', flexShrink: 0 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {emails.length === 0 && (
+            <div style={{ ...card, textAlign: 'center', padding: '3rem 2rem' }}>
+              <p style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📧</p>
+              <p style={{ color: 'var(--text)', fontWeight: 600, marginBottom: 6 }}>No scheduled emails yet</p>
+              <p style={{ color: 'var(--muted)', fontSize: '0.875rem', margin: 0 }}>Schedule cold email follow-ups from the <a href="/dashboard/cold-email" style={{ color: '#a78bfa' }}>Cold Email Sequences</a> page.</p>
             </div>
           )}
         </>

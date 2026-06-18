@@ -82,7 +82,7 @@ export default function AdminPage() {
   const now = new Date()
   const paying = users.filter(u => u.plan !== 'free' && !u.isAdmin)
   const free = users.filter(u => u.plan === 'free' && !u.isAdmin)
-  const revenue = paying.filter(u => u.plan === 'monthly').length * 79 + paying.filter(u => u.plan === 'yearly').length * 599
+  const revenue = paying.filter(u => u.plan === 'monthly').length * 20 + paying.filter(u => u.plan === 'yearly').length * 200
 
   // Users whose trial ended, not paying, not blocked
   const overdue = users.filter(u =>
