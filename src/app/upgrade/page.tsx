@@ -19,7 +19,7 @@ export default async function UpgradePage() {
     select: { plan: true, trialEndsAt: true, isAdmin: true },
   })
 
-  if (dbUser?.isAdmin || (dbUser?.plan && dbUser.plan !== 'free')) {
+  if (!dbUser?.isAdmin && dbUser?.plan && dbUser.plan !== 'free') {
     redirect('/dashboard')
   }
 
