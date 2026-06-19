@@ -61,6 +61,15 @@ export default function AdminPage() {
     await load()
   }
 
+  async function deleteUser(userId: string, email: string) {
+    if (!window.confirm(`Permanently delete ${email}? This cannot be undone.`)) return
+    await fetch('/api/admin/delete-user', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+    await load()
+  }
+
   async function setBlocked(userId: string, blocked: boolean) {
     await fetch('/api/admin/block', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -185,6 +194,7 @@ export default function AdminPage() {
                             ? <button onClick={() => setBlocked(u.id, true)}  style={btn('#fca5a5', 'rgba(239,68,68,0.08)')}>Block</button>
                             : <button onClick={() => setBlocked(u.id, false)} style={btn('#86efac', 'rgba(34,197,94,0.08)')}>Unblock</button>
                           }
+                          <button onClick={() => deleteUser(u.id, u.email)} style={btn('#6b7280', 'rgba(107,114,128,0.08)')}>Delete</button>
                         </div>
                       )}
                     </td>
