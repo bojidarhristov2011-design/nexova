@@ -145,7 +145,18 @@ export default function AdminPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => {
+              {[...realUsers].sort((a, b) => {
+                const order = (u: User) => {
+                  if (u.blocked) return 3
+                  if (u.plan === 'monthly' || u.plan === 'yearly') return 2
+                  if (!u.trialEndsAt) return 4
+                  const d = new Date(u.trialEndsAt).getTime() - now.getTime()
+                  if (d < 0) return 0       // expired — top
+                  if (d < 5 * 86400000) return 1  // expiring soon
+                  return 2                  // active
+                }
+                return order(a) - order(b)
+              }).map(u => {
                 const st = statusInfo(u, now)
                 const accessEnd = u.plan === 'monthly' || u.plan === 'yearly'
                   ? `${u.plan} (ongoing)` : u.trialEndsAt ? new Date(u.trialEndsAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
