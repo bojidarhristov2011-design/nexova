@@ -13,7 +13,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
     select: { isAdmin: true, plan: true, trialEndsAt: true, blocked: true },
   })
 
-  if (dbUser?.blocked) redirect('/suspended')
+  if (!dbUser?.isAdmin) {
+    // Manually blocked by admin
+    if (dbUser?.blocked) redirect('/access-ended')
+    // Trial expired and not on a paid plan
+    const trialOver = dbUser?.trialEndsAt && new Date(dbUser.trialEndsAt) < new Date()
+    if (trialOver && dbUser?.plan === 'free') redirect('/access-ended')
+  }
 
   return (
     <div className="flex h-full" style={{ background: 'var(--bg)' }}>
