@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { NexovaLogo } from './NexovaLogo'
+import { LanguageSwitcher } from './LanguageSwitcher'
 
 interface Props {
   user: { id: string; email: string; name?: string | null }
@@ -133,6 +134,14 @@ export function Sidebar({ user, isAdmin }: Props) {
             })}
           </div>
         ))}
+
+        {/* Language switcher */}
+        <div style={{ marginTop: '0.25rem', marginBottom: '0.25rem' }}>
+          <div style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.75rem 0.75rem 0.25rem' }}>
+            Language
+          </div>
+          <LanguageSwitcher />
+        </div>
 
         {/* Settings + Admin */}
         <div style={{ marginTop: '0.25rem' }}>
