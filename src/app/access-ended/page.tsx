@@ -17,7 +17,7 @@ export default function AccessEndedPage() {
           Your access has ended
         </h1>
         <p style={{ color: '#64748b', lineHeight: 1.8, margin: '0 0 2rem', fontSize: '0.95rem' }}>
-          Your free access period has expired. Reach out and we&apos;ll get you back in.
+          Your 2-week free access has expired. Reach out and we&apos;ll get you back in.
         </p>
         <a
           href="mailto:bojidarhristov2011@gmail.com?subject=Nexova - Continue my access&body=Hi, my free access has ended and I would like to continue using Nexova."
