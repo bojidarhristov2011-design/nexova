@@ -4,8 +4,34 @@ import './globals.css'
 import { Providers } from '@/components/Providers'
 
 export const metadata: Metadata = {
-  title: 'Nexova — AI Agent Platform',
-  description: 'Build and deploy AI agents for your business in minutes.',
+  title: 'Nexova — AI Business Platform',
+  description: 'AI platform for small businesses. Write emails, contracts, quotes, proposals, captions and more — in seconds.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/og-image.png',
+  },
+  openGraph: {
+    title: 'Nexova — AI Business Platform',
+    description: 'AI platform for small businesses. Write emails, contracts, quotes, proposals, captions and more — in seconds.',
+    url: 'https://nexova-platform.netlify.app',
+    siteName: 'Nexova',
+    images: [
+      {
+        url: 'https://nexova-platform.netlify.app/og-image.png',
+        width: 1376,
+        height: 768,
+        alt: 'Nexova — AI Business Platform',
+      },
+    ],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nexova — AI Business Platform',
+    description: 'AI platform for small businesses. Write emails, contracts, quotes, proposals, captions and more — in seconds.',
+    images: ['https://nexova-platform.netlify.app/og-image.png'],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,16 +39,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="h-full">
       <head>
         <style>{`
-          /* Hide Google Translate toolbar */
           .goog-te-banner-frame, .skiptranslate { display: none !important; }
           body { top: 0 !important; }
-          /* Hide Google branding in dropdown */
           .goog-te-gadget { font-size: 0 !important; }
           .goog-te-gadget a { display: none !important; }
         `}</style>
       </head>
       <body className="h-full">
-        {/* Hidden Google Translate widget — controlled via LanguageSwitcher */}
         <div id="google_translate_element" style={{ display: 'none' }} />
         <Providers>{children}</Providers>
         <Script
