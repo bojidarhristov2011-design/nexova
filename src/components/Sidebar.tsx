@@ -64,7 +64,8 @@ const SECTIONS = [
   {
     label: 'Automate',
     links: [
-      { href: '/dashboard/agents', label: 'AI Agents', icon: '◈' },
+      { href: '/dashboard/operator', label: 'Business Operator', icon: '◈' },
+      { href: '/dashboard/agents',   label: 'Chat Agents',       icon: '💬' },
     ],
   },
 ]
