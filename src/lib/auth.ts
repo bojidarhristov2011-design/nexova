@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { db } from './db'
+import { cookies } from 'next/headers'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -29,7 +30,35 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      if (session.user) (session.user as { id?: string }).id = token.id as string
+      const realId = token.id as string
+      if (session.user) (session.user as { id?: string }).id = realId
+
+      // If this user is "acting as" another account they've been granted access to, swap in.
+      try {
+        const jar = await cookies()
+        const actingAs = jar.get('nx_acting_as')?.value
+        if (actingAs && session.user?.email) {
+          const grant = await db.teamAccess.findFirst({
+            where: {
+              ownerId: actingAs,
+              OR: [{ collaboratorId: realId }, { collaboratorEmail: session.user.email }],
+            },
+          })
+          if (grant) {
+            const owner = await db.user.findUnique({ where: { id: actingAs }, select: { id: true, email: true, name: true } })
+            if (owner) {
+              session.user.id = owner.id
+              session.user.email = owner.email
+              session.user.name = owner.name
+              ;(session.user as { actingAs?: boolean; realId?: string }).actingAs = true
+              ;(session.user as { actingAs?: boolean; realId?: string }).realId = realId
+            }
+          }
+        }
+      } catch {
+        // cookies() unavailable in this context — just return the normal session
+      }
+
       return session
     },
   },

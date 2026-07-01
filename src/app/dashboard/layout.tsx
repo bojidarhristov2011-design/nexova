@@ -13,10 +13,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     select: { isAdmin: true, plan: true, trialEndsAt: true, blocked: true },
   })
 
-  if (!dbUser?.isAdmin) {
-    // Manually blocked by admin
+  const actingAs = (session.user as { actingAs?: boolean }).actingAs ?? false
+
+  // A collaborator who was granted access can always get in, even if the
+  // owner's trial expired or they were blocked — that's the point of access.
+  if (!dbUser?.isAdmin && !actingAs) {
     if (dbUser?.blocked) redirect('/access-ended')
-    // Trial expired and not on a paid plan
     const trialOver = dbUser?.trialEndsAt && new Date(dbUser.trialEndsAt) < new Date()
     if (trialOver && dbUser?.plan === 'free') redirect('/access-ended')
   }

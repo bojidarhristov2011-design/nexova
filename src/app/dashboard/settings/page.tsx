@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
+interface AccessGrant { id: string; collaboratorEmail: string; collaboratorId: string | null; createdAt: string }
+interface Business { id: string; name: string; description: string }
 
 const TONES = [
   { value: 'professional', label: 'Professional' },
@@ -18,21 +21,96 @@ export default function SettingsPage() {
   const [form, setForm] = useState({
     businessName: '', businessDesc: '', telegramToken: '',
     telegramChannel: '', tiktokHandle: '', contentTone: 'professional',
+    autoNurtureOnLead: false, autoReplyOnLeadCapture: false,
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState('')
+  const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null)
+  const [newBizName, setNewBizName] = useState('')
+  const [addingBiz, setAddingBiz] = useState(false)
+
+  const loadAccess = useCallback(async () => {
+    const res = await fetch('/api/team-access')
+    const data = await res.json()
+    setAccessGrants(Array.isArray(data) ? data : [])
+  }, [])
+
+  const loadBusinesses = useCallback(async () => {
+    const res = await fetch('/api/businesses')
+    const data = await res.json()
+    setBusinesses(Array.isArray(data) ? data : [])
+  }, [])
 
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(data => {
       if (data) setForm(f => ({ ...f, ...data }))
       setLoading(false)
     })
-  }, [])
+    loadAccess()
+    loadBusinesses()
+    const match = document.cookie.match(/nx_current_business=([^;]+)/)
+    if (match) setCurrentBusinessId(match[1])
+  }, [loadAccess, loadBusinesses])
 
-  function set(field: string, value: string) {
+  async function addBusiness() {
+    if (!newBizName) return
+    setAddingBiz(true)
+    try {
+      await fetch('/api/businesses', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newBizName }),
+      })
+      setNewBizName('')
+      await loadBusinesses()
+    } finally { setAddingBiz(false) }
+  }
+
+  async function deleteBusiness(id: string) {
+    if (!confirm('Delete this business and unlink all its data?')) return
+    await fetch(`/api/businesses/${id}`, { method: 'DELETE' })
+    if (currentBusinessId === id) selectBusiness(null)
+    await loadBusinesses()
+  }
+
+  async function selectBusiness(id: string | null) {
+    await fetch('/api/businesses/select', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessId: id }),
+    })
+    setCurrentBusinessId(id)
+    window.location.reload()
+  }
+
+  async function inviteCollaborator() {
+    if (!inviteEmail) return
+    setInviting(true); setInviteError('')
+    try {
+      const res = await fetch('/api/team-access', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setInviteEmail('')
+      await loadAccess()
+    } catch (e: unknown) { setInviteError(e instanceof Error ? e.message : 'Failed') }
+    finally { setInviting(false) }
+  }
+
+  async function revokeAccess(id: string) {
+    await fetch(`/api/team-access/${id}`, { method: 'DELETE' })
+    await loadAccess()
+  }
+
+  function set(field: string, value: string | boolean) {
     setForm(f => ({ ...f, [field]: value }))
   }
 
@@ -163,6 +241,90 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Businesses */}
+      <div style={card}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', marginTop: 0 }}>🏢 Your Businesses</h2>
+        <p style={{ color: 'var(--dim)', fontSize: '0.8125rem', marginBottom: '1rem', marginTop: 0 }}>
+          Manage multiple businesses from one account. Click one to switch — CRM, Invoices, and Scheduler will only show that business&apos;s data.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, marginBottom: '1rem' }}>
+          <button onClick={() => selectBusiness(null)}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: !currentBusinessId ? 'rgba(124,58,237,0.12)' : 'var(--bg2)', border: `1px solid ${!currentBusinessId ? 'rgba(124,58,237,0.35)' : 'var(--border)'}`, borderRadius: 10, padding: '0.625rem 0.875rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' as const }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: !currentBusinessId ? '#c4b5fd' : 'var(--text)' }}>All businesses</span>
+            {!currentBusinessId && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#86efac' }}>✓ Active</span>}
+          </button>
+          {businesses.map(b => (
+            <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => selectBusiness(b.id)}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: currentBusinessId === b.id ? 'rgba(124,58,237,0.12)' : 'var(--bg2)', border: `1px solid ${currentBusinessId === b.id ? 'rgba(124,58,237,0.35)' : 'var(--border)'}`, borderRadius: 10, padding: '0.625rem 0.875rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' as const }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: currentBusinessId === b.id ? '#c4b5fd' : 'var(--text)' }}>{b.name}</span>
+                {currentBusinessId === b.id && <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: '#86efac' }}>✓ Active</span>}
+              </button>
+              <button onClick={() => deleteBusiness(b.id)} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.85rem', padding: '0 0.5rem' }}>✕</button>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input style={inp} value={newBizName} onChange={e => setNewBizName(e.target.value)} placeholder="New business name e.g. Robot Factory" onKeyDown={e => e.key === 'Enter' && addBusiness()} />
+          <button onClick={addBusiness} disabled={!newBizName || addingBiz}
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0 1.25rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const, opacity: !newBizName || addingBiz ? 0.5 : 1 }}>
+            + Add
+          </button>
+        </div>
+      </div>
+
+      {/* Automation Rules */}
+      <div style={card}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', marginTop: 0 }}>⚡ Automation Rules</h2>
+        <p style={{ color: 'var(--dim)', fontSize: '0.8125rem', marginBottom: '1rem', marginTop: 0 }}>
+          Turn these on and they run automatically — no clicking needed.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.875rem' }}>
+          {[
+            { key: 'autoNurtureOnLead', title: 'Auto-nurture new leads', desc: 'Every new lead (from CRM or your Lead Capture form) automatically gets a 3-email follow-up sequence scheduled.' },
+            { key: 'autoReplyOnLeadCapture', title: 'Instant auto-reply', desc: 'Anyone who submits your Lead Capture form gets an immediate "thanks for reaching out" email.' },
+          ].map(rule => (
+            <label key={rule.key} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <div onClick={() => set(rule.key, !(form as Record<string, unknown>)[rule.key])}
+                style={{ width: 40, height: 22, background: (form as Record<string, unknown>)[rule.key] ? 'rgba(124,58,237,0.7)' : 'var(--bg2)', border: `1px solid ${(form as Record<string, unknown>)[rule.key] ? 'rgba(124,58,237,0.5)' : 'var(--border)'}`, borderRadius: 99, position: 'relative' as const, transition: 'all 0.2s', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}>
+                <div style={{ position: 'absolute' as const, top: 2, left: (form as Record<string, unknown>)[rule.key] ? 20 : 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)' }}>{rule.title}</div>
+                <div style={{ fontSize: '0.775rem', color: 'var(--dim)', lineHeight: 1.5 }}>{rule.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Team Access */}
+      <div style={card}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', marginTop: 0 }}>🔑 Give Access</h2>
+        <p style={{ color: 'var(--dim)', fontSize: '0.8125rem', marginBottom: '1rem', marginTop: 0 }}>
+          Invite someone (like the person who set this up for you) to manage your account — they sign in with their own login, no password sharing needed.
+        </p>
+        {inviteError && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 8, padding: '0.5rem 0.75rem', marginBottom: '0.75rem', fontSize: '0.8125rem' }}>{inviteError}</div>}
+        <div style={{ display: 'flex', gap: 8, marginBottom: accessGrants.length ? '1rem' : 0 }}>
+          <input style={inp} type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="their@email.com" onKeyDown={e => e.key === 'Enter' && inviteCollaborator()} />
+          <button onClick={inviteCollaborator} disabled={!inviteEmail || inviting}
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0 1.25rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const, opacity: !inviteEmail || inviting ? 0.5 : 1 }}>
+            {inviting ? '...' : 'Invite'}
+          </button>
+        </div>
+        {accessGrants.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+            {accessGrants.map(g => (
+              <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', borderRadius: 8, padding: '0.5rem 0.75rem' }}>
+                <span style={{ flex: 1, fontSize: '0.825rem', color: 'var(--text)' }}>{g.collaboratorEmail}</span>
+                <span style={{ fontSize: '0.7rem', color: g.collaboratorId ? '#86efac' : '#fbbf24' }}>{g.collaboratorId ? 'Active' : 'Pending signup'}</span>
+                <button onClick={() => revokeAccess(g.id)} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <button

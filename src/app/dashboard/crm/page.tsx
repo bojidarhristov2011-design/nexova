@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePersistedState } from '@/hooks/usePersistedState'
+import { exportToGoogleSheets } from '@/lib/csvExport'
+
+const DAYS = [0, 3, 7]
 
 interface Contact {
   id: string
@@ -35,10 +39,15 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Contact | null>(null)
-  const [form, setForm] = useState(emptyForm())
+  const [form, setForm] = usePersistedState('crm_draft_form', emptyForm())
   const [saving, setSaving] = useState(false)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [nurtureFor, setNurtureFor] = useState<Contact | null>(null)
+  const [nurtureEmails, setNurtureEmails] = useState<string[]>([])
+  const [nurtureLoading, setNurtureLoading] = useState(false)
+  const [nurtureDates, setNurtureDates] = useState<string[]>(['', '', ''])
+  const [nurtureScheduled, setNurtureScheduled] = useState<number[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -79,6 +88,32 @@ export default function CRMPage() {
     await load()
   }
 
+  async function openNurture(c: Contact) {
+    setNurtureFor(c); setNurtureEmails([]); setNurtureScheduled([])
+    setNurtureLoading(true)
+    const today = new Date()
+    setNurtureDates(DAYS.map(d => { const dt = new Date(today); dt.setDate(dt.getDate() + d); return dt.toISOString().split('T')[0] }))
+    try {
+      const res = await fetch('/api/nurture-sequence', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactName: c.name, company: c.company, notes: c.notes }),
+      })
+      const data = await res.json()
+      const emails = (data.content || '').split(/---EMAIL \d+---/).filter((s: string) => s.trim()).map((s: string) => s.trim())
+      setNurtureEmails(emails)
+    } finally { setNurtureLoading(false) }
+  }
+
+  async function scheduleNurture(idx: number) {
+    if (!nurtureFor?.email || !nurtureEmails[idx] || !nurtureDates[idx]) return
+    const scheduledAt = new Date(nurtureDates[idx]); scheduledAt.setHours(9, 0, 0, 0)
+    await fetch('/api/scheduled-emails', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: nurtureFor.email, subject: `Following up, ${nurtureFor.name}`, body: nurtureEmails[idx], scheduledAt: scheduledAt.toISOString(), label: `Nurture ${idx + 1} — Day ${DAYS[idx]} — ${nurtureFor.name}` }),
+    })
+    setNurtureScheduled(prev => [...prev, idx])
+  }
+
   const filtered = contacts.filter(c => {
     if (filter !== 'all' && c.status !== filter) return false
     if (search && !`${c.name} ${c.email} ${c.company}`.toLowerCase().includes(search.toLowerCase())) return false
@@ -94,7 +129,13 @@ export default function CRMPage() {
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>CRM</h1>
           <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Track your leads and customers in one place</p>
         </div>
-        <button onClick={openNew} style={primaryBtn}>+ Add Contact</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => exportToGoogleSheets('leads.csv', contacts.map(c => ({ Name: c.name, Email: c.email || '', Phone: c.phone || '', Company: c.company || '', Status: c.status, Notes: c.notes || '' })))}
+            disabled={contacts.length === 0} style={{ ...ghostBtn, opacity: contacts.length === 0 ? 0.5 : 1 }}>
+            📊 Export to Google Sheets
+          </button>
+          <button onClick={openNew} style={primaryBtn}>+ Add Contact</button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -171,13 +212,49 @@ export default function CRMPage() {
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                 {c.status === 'lead' && (
-                  <button onClick={() => updateStatus(c.id, 'customer')} style={{ ...ghostBtn, color: '#86efac' }}>→ Customer</button>
+                  <>
+                    <button onClick={() => updateStatus(c.id, 'customer')} style={{ ...ghostBtn, color: '#86efac' }}>→ Customer</button>
+                    {c.email && <button onClick={() => openNurture(c)} style={{ ...ghostBtn, color: '#c4b5fd' }}>✨ Nurture</button>}
+                  </>
                 )}
                 <button onClick={() => openEdit(c)} style={ghostBtn}>Edit</button>
                 <button onClick={() => del(c.id)} style={{ ...ghostBtn, color: '#fca5a5' }}>✕</button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Nurture sequence modal */}
+      {nurtureFor && (
+        <div onClick={() => setNurtureFor(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '2rem' }}>
+          <div onClick={e => e.stopPropagation()} style={{ ...card, maxWidth: 560, width: '100%', maxHeight: '85vh', overflowY: 'auto' as const }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Nurture sequence for {nurtureFor.name}</h2>
+              <button onClick={() => setNurtureFor(null)} style={ghostBtn}>✕</button>
+            </div>
+            {nurtureLoading ? (
+              <p style={{ color: 'var(--dim)', textAlign: 'center' as const, padding: '2rem' }}>Writing 3 emails...</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.875rem' }}>
+                {nurtureEmails.map((email, i) => (
+                  <div key={i} style={{ background: 'var(--bg2)', borderRadius: 12, padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#c4b5fd', background: 'rgba(124,58,237,0.12)', borderRadius: 6, padding: '2px 8px' }}>DAY {DAYS[i]}</span>
+                      <input type="date" value={nurtureDates[i] || ''} onChange={e => setNurtureDates(prev => { const next = [...prev]; next[i] = e.target.value; return next })}
+                        style={{ ...inp, width: 'auto', padding: '0.25rem 0.625rem', fontSize: '0.78rem' }} />
+                    </div>
+                    <p style={{ fontSize: '0.825rem', color: 'var(--text)', whiteSpace: 'pre-wrap' as const, lineHeight: 1.6, margin: '0 0 0.625rem' }}>{email}</p>
+                    <button onClick={() => scheduleNurture(i)} disabled={nurtureScheduled.includes(i)}
+                      style={{ ...ghostBtn, color: nurtureScheduled.includes(i) ? '#86efac' : '#c4b5fd', opacity: nurtureScheduled.includes(i) ? 0.7 : 1 }}>
+                      {nurtureScheduled.includes(i) ? '✓ Scheduled' : '🗓 Schedule this email'}
+                    </button>
+                  </div>
+                ))}
+                <p style={{ color: 'var(--dim)', fontSize: '0.78rem', margin: 0 }}>Manage scheduled emails in the <a href="/dashboard/scheduler" style={{ color: '#a78bfa' }}>Scheduler →</a></p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

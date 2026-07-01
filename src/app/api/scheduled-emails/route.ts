@@ -2,14 +2,16 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getCurrentBusinessId } from '@/lib/currentBusiness'
 import nodemailer from 'nodemailer'
 
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const businessId = await getCurrentBusinessId()
   const emails = await db.scheduledEmail.findMany({
-    where: { userId: session.user.id },
+    where: { userId: session.user.id, ...(businessId ? { businessId } : {}) },
     orderBy: { scheduledAt: 'asc' },
   })
   return NextResponse.json(emails)
@@ -19,11 +21,12 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const businessId = await getCurrentBusinessId()
   const { to, subject, body, scheduledAt, label } = await req.json()
   if (!to || !body || !scheduledAt) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
   const email = await db.scheduledEmail.create({
-    data: { userId: session.user.id, to, subject: subject || '', body, scheduledAt: new Date(scheduledAt), label },
+    data: { userId: session.user.id, businessId, to, subject: subject || '', body, scheduledAt: new Date(scheduledAt), label },
   })
   return NextResponse.json(email)
 }
@@ -42,9 +45,10 @@ export async function PATCH() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const businessId = await getCurrentBusinessId()
   const now = new Date()
   const due = await db.scheduledEmail.findMany({
-    where: { userId: session.user.id, status: 'pending', scheduledAt: { lte: now } },
+    where: { userId: session.user.id, ...(businessId ? { businessId } : {}), status: 'pending', scheduledAt: { lte: now } },
   })
 
   if (due.length === 0) return NextResponse.json({ sent: 0 })

@@ -2,11 +2,35 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { searchBusinesses } from '@/lib/leadSearch'
 import Groq from 'groq-sdk'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-const TOOLS = [
+const PERSONAS: Record<string, { label: string; prompt: string; tools: string[] }> = {
+  general: {
+    label: 'General',
+    prompt: 'You have access to all business tools: CRM, invoices, scheduled emails, and scheduled social posts.',
+    tools: ['add_contact', 'list_contacts', 'create_invoice', 'list_invoices', 'schedule_email', 'schedule_social_post'],
+  },
+  copywriter: {
+    label: 'Copywriter',
+    prompt: 'You are a Copywriter specialist. Your job is to write excellent marketing copy — social captions, ad copy, content ideas — and schedule it for posting. Always write the actual content yourself, well-crafted and specific to the business, then schedule it. Do not ask the user to write it.',
+    tools: ['schedule_social_post', 'list_contacts'],
+  },
+  researcher: {
+    label: 'Lead Researcher',
+    prompt: 'You are a Lead Researcher specialist. Your job is to find real businesses matching what the user is targeting (by type and location) and add the good ones to the CRM as leads. Always search first, show results, then add the ones that fit.',
+    tools: ['search_businesses', 'add_contact', 'list_contacts'],
+  },
+  outreach: {
+    label: 'Outreach Specialist',
+    prompt: 'You are an Outreach Specialist. Your job is to draft and schedule outreach and follow-up emails to leads and customers. Write warm, specific, non-generic emails tailored to the business and the recipient, then schedule them.',
+    tools: ['schedule_email', 'add_contact', 'list_contacts'],
+  },
+}
+
+const ALL_TOOLS = [
   {
     type: 'function' as const,
     function: {
@@ -99,6 +123,21 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'search_businesses',
+      description: 'Search for real businesses by type and location (e.g. "hair salons" near "Burgas, Bulgaria")',
+      parameters: {
+        type: 'object',
+        properties: {
+          businessType: { type: 'string' },
+          location: { type: 'string' },
+        },
+        required: ['businessType', 'location'],
+      },
+    },
+  },
 ]
 
 async function runTool(name: string, args: Record<string, unknown>, userId: string) {
@@ -175,6 +214,14 @@ async function runTool(name: string, args: Record<string, unknown>, userId: stri
       })
       return { success: true, scheduledPost: p }
     }
+    case 'search_businesses': {
+      try {
+        const results = await searchBusinesses(String(args.businessType), String(args.location))
+        return { results: results.slice(0, 10) }
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : 'Search failed' }
+      }
+    }
     default:
       return { error: 'Unknown tool' }
   }
@@ -185,10 +232,13 @@ export async function POST(request: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const userId = session.user.id
 
-  const { messages } = await request.json()
+  const { messages, persona: personaKey } = await request.json()
   if (!messages?.length) return NextResponse.json({ error: 'No messages' }, { status: 400 })
 
-  const systemPrompt = `You are the Nexova Business Operator — an AI agent with real access to this user's business tools: CRM contacts, invoices, scheduled emails, and scheduled social posts. When the user asks you to do something, actually call the right tool instead of just describing it. Confirm what you did afterwards in a short, clear summary. Today's date is ${new Date().toISOString().split('T')[0]}.`
+  const persona = PERSONAS[personaKey] || PERSONAS.general
+  const tools = ALL_TOOLS.filter(t => persona.tools.includes(t.function.name))
+
+  const systemPrompt = `You are the Nexova Business Operator. ${persona.prompt} When the user asks you to do something, actually call the right tool instead of just describing it. Confirm what you did afterwards in a short, clear summary. Today's date is ${new Date().toISOString().split('T')[0]}.`
 
   const chatMessages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string; tool_calls?: unknown[] }> = [
     { role: 'system', content: systemPrompt },
@@ -203,7 +253,7 @@ export async function POST(request: Request) {
         model: 'llama-3.3-70b-versatile',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages: chatMessages as any,
-        tools: TOOLS,
+        tools,
         tool_choice: 'auto',
         temperature: 0.4,
       })

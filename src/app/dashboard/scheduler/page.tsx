@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { exportToGoogleSheets } from '@/lib/csvExport'
 
 interface ScheduledPost {
   id: string
@@ -15,6 +16,7 @@ interface ScheduledEmail {
   id: string
   to: string
   subject: string
+  body: string
   scheduledAt: string
   status: string
   label: string | null
@@ -108,6 +110,11 @@ export default function SchedulerPage() {
     await load()
   }
 
+  async function markPosted(id: string) {
+    await fetch(`/api/scheduler/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'sent' }) })
+    await load()
+  }
+
   async function delEmail(id: string) {
     if (!confirm('Delete this scheduled email?')) return
     await fetch('/api/scheduled-emails', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
@@ -124,11 +131,21 @@ export default function SchedulerPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>Scheduler</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Schedule posts and cold email follow-ups to send automatically</p>
+          <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Emails and Telegram posts send automatically. Instagram/LinkedIn/Facebook posts are prepared and queued for you to post manually — no platform offers free auto-posting.</p>
         </div>
-        <button onClick={sendDue} disabled={running} style={{ ...ghostBtn }}>
-          {running ? 'Sending...' : `▶ Send All Due (${pendingPosts.length + pendingEmails.length})`}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => tab === 'posts'
+              ? exportToGoogleSheets('content-ideas.csv', posts.map(p => ({ Platform: p.platform, Content: p.content, ScheduledAt: p.scheduledAt, Status: p.status })))
+              : exportToGoogleSheets('ai-scripts.csv', emails.map(e => ({ To: e.to, Subject: e.subject, Body: e.body, ScheduledAt: e.scheduledAt, Status: e.status, Label: e.label || '' })))}
+            disabled={(tab === 'posts' ? posts.length : emails.length) === 0}
+            style={{ ...ghostBtn, opacity: (tab === 'posts' ? posts.length : emails.length) === 0 ? 0.5 : 1 }}>
+            📊 Export to Google Sheets
+          </button>
+          <button onClick={sendDue} disabled={running} style={{ ...ghostBtn }}>
+            {running ? 'Sending...' : `▶ Send All Due (${pendingPosts.length + pendingEmails.length})`}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -184,13 +201,23 @@ export default function SchedulerPage() {
                 {pendingPosts.map(p => (
                   <div key={p.id} style={{ ...card, padding: '1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' as const }}>
                         <span style={statusStyle(p.status)}>{p.status}</span>
                         <span style={{ color: 'var(--dim)', fontSize: '0.8rem' }}>{p.platform} · {new Date(p.scheduledAt).toLocaleString()}</span>
+                        {p.platform === 'telegram' ? (
+                          <span style={{ background: 'rgba(34,197,94,0.1)', color: '#86efac', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '1px 7px', fontSize: '0.7rem', fontWeight: 600 }}>⚡ Auto-posts</span>
+                        ) : (
+                          <span style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 6, padding: '1px 7px', fontSize: '0.7rem', fontWeight: 600 }}>📋 Post manually</span>
+                        )}
                       </div>
                       <p style={{ color: 'var(--text)', fontSize: '0.875rem', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.content.slice(0, 200)}{p.content.length > 200 ? '…' : ''}</p>
                     </div>
-                    <button onClick={() => del(p.id)} style={{ ...ghostBtn, color: '#fca5a5', flexShrink: 0 }}>✕</button>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                      {p.platform !== 'telegram' && (
+                        <button onClick={() => markPosted(p.id)} style={{ ...ghostBtn, color: '#86efac' }}>✓ Mark posted</button>
+                      )}
+                      <button onClick={() => del(p.id)} style={{ ...ghostBtn, color: '#fca5a5' }}>✕</button>
+                    </div>
                   </div>
                 ))}
               </div>

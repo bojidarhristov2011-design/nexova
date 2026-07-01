@@ -25,6 +25,35 @@ model User {
   scheduledEmails ScheduledEmail[]
   settings       UserSettings?
   tasks          Task[]
+  accessGiven    TeamAccess[] @relation("OwnerAccess")
+  accessReceived TeamAccess[] @relation("CollaboratorAccess")
+  businesses     Business[]
+}
+
+model Business {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+
+  contacts        Contact[]
+  invoices        Invoice[]
+  scheduledEmails ScheduledEmail[]
+  scheduledPosts  ScheduledPost[]
+}
+
+model TeamAccess {
+  id                String   @id @default(cuid())
+  ownerId           String
+  owner             User     @relation("OwnerAccess", fields: [ownerId], references: [id], onDelete: Cascade)
+  collaboratorEmail String
+  collaboratorId    String?
+  collaborator      User?    @relation("CollaboratorAccess", fields: [collaboratorId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([ownerId, collaboratorEmail])
 }
 
 model Task {
@@ -50,6 +79,8 @@ model UserSettings {
   telegramChannel String  @default("")
   tiktokHandle    String  @default("")
   contentTone     String  @default("professional")
+  autoNurtureOnLead      Boolean @default(false)
+  autoReplyOnLeadCapture Boolean @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -90,6 +121,8 @@ model Invoice {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId    String?
+  business      Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   invoiceNumber String
   clientName    String
   clientEmail   String
@@ -109,6 +142,8 @@ model Contact {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId String?
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name      String
   email     String?
   phone     String?
@@ -123,8 +158,11 @@ model ScheduledPost {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   platform    String   @default("telegram")
   content     String
+  imageData   String?  // base64 data URL of an attached product photo
   scheduledAt DateTime
   status      String   @default("pending") // pending | sent | failed
   createdAt   DateTime @default(now())
@@ -134,6 +172,8 @@ model ScheduledEmail {
   id          String   @id @default(cuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
   to          String
   subject     String
   body        String

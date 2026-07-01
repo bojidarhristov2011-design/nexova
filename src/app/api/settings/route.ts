@@ -11,6 +11,7 @@ export async function GET() {
   return NextResponse.json(settings ?? {
     businessName: '', businessDesc: '', telegramToken: '',
     telegramChannel: '', tiktokHandle: '', contentTone: 'professional',
+    autoNurtureOnLead: false, autoReplyOnLeadCapture: false,
   })
 }
 
@@ -28,6 +29,8 @@ export async function PUT(request: Request) {
       telegramChannel: body.telegramChannel ?? '',
       tiktokHandle:    body.tiktokHandle    ?? '',
       contentTone:     body.contentTone     ?? 'professional',
+      ...(body.autoNurtureOnLead !== undefined ? { autoNurtureOnLead: body.autoNurtureOnLead } : {}),
+      ...(body.autoReplyOnLeadCapture !== undefined ? { autoReplyOnLeadCapture: body.autoReplyOnLeadCapture } : {}),
     },
     create: {
       userId:          session.user.id,
@@ -37,6 +40,8 @@ export async function PUT(request: Request) {
       telegramChannel: body.telegramChannel ?? '',
       tiktokHandle:    body.tiktokHandle    ?? '',
       contentTone:     body.contentTone     ?? 'professional',
+      autoNurtureOnLead:      body.autoNurtureOnLead      ?? false,
+      autoReplyOnLeadCapture: body.autoReplyOnLeadCapture ?? false,
     },
   })
   return NextResponse.json(settings)

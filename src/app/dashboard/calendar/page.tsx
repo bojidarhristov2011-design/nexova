@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePersistedState } from '@/hooks/usePersistedState'
 
 type Task = { id: string; title: string; description?: string; dueDate: string; dueTime?: string; completed: boolean; category: string }
 
@@ -22,7 +23,7 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [selectedDate, setSelectedDate] = useState(today.toISOString().slice(0, 10))
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ title: '', description: '', dueTime: '', category: 'task' })
+  const [form, setForm] = usePersistedState('calendar_draft_form', { title: '', description: '', dueTime: '', category: 'task' })
   const [loading, setLoading] = useState(false)
 
   const fetchTasks = useCallback(async () => {

@@ -5,9 +5,11 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { NexovaLogo } from './NexovaLogo'
 import { LanguageSwitcher } from './LanguageSwitcher'
+import { WorkspaceSwitcher } from './WorkspaceSwitcher'
+import { BusinessIndicator } from './BusinessIndicator'
 
 interface Props {
-  user: { id: string; email: string; name?: string | null }
+  user: { id: string; email: string; name?: string | null; actingAs?: boolean }
   isAdmin?: boolean
 }
 
@@ -22,6 +24,8 @@ const SECTIONS = [
     label: 'Business',
     links: [
       { href: '/dashboard/crm',          label: 'CRM',               icon: '👥' },
+      { href: '/dashboard/lead-finder',   label: 'Lead Finder',       icon: '🔍' },
+      { href: '/dashboard/lead-capture',  label: 'Lead Capture',      icon: '🎯' },
       { href: '/dashboard/invoices',      label: 'Invoices',          icon: '🧾' },
       { href: '/dashboard/quotes',        label: 'Quote Generator',   icon: '💰' },
       { href: '/dashboard/calendar',      label: 'Calendar',          icon: '📆' },
@@ -56,16 +60,18 @@ const SECTIONS = [
   {
     label: 'Content',
     links: [
-      { href: '/dashboard/captions',  label: 'Caption Generator', icon: '📱' },
-      { href: '/dashboard/content',   label: 'Content Studio',    icon: '✨' },
-      { href: '/dashboard/scheduler', label: 'Scheduler',         icon: '📅' },
+      { href: '/dashboard/captions',       label: 'Caption Generator', icon: '📱' },
+      { href: '/dashboard/ad-copy',        label: 'Ad Copy (Meta)',   icon: '📣' },
+      { href: '/dashboard/content',        label: 'Content Studio',   icon: '✨' },
+      { href: '/dashboard/scheduler',      label: 'Scheduler',        icon: '📅' },
     ],
   },
   {
     label: 'Automate',
     links: [
-      { href: '/dashboard/operator', label: 'Business Operator', icon: '◈' },
-      { href: '/dashboard/agents',   label: 'Chat Agents',       icon: '💬' },
+      { href: '/dashboard/operator',         label: 'Business Operator', icon: '◈' },
+      { href: '/dashboard/sales-automation', label: 'Sales Automation',  icon: '📈' },
+      { href: '/dashboard/agents',           label: 'Chat Agents',       icon: '💬' },
     ],
   },
 ]
@@ -98,6 +104,8 @@ export function Sidebar({ user, isAdmin }: Props) {
           Nexova
         </span>
       </div>
+
+      <BusinessIndicator />
 
       {/* Nav sections */}
       <nav style={{ flex: 1, padding: '0 0.625rem', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -147,6 +155,7 @@ export function Sidebar({ user, isAdmin }: Props) {
         {/* Settings + Admin */}
         <div style={{ marginTop: '0.25rem' }}>
           {[
+            { href: '/dashboard/help', label: 'Help & Support', icon: '💡' },
             { href: '/dashboard/settings', label: 'Settings', icon: '⚙️' },
             ...(isAdmin ? [{ href: '/dashboard/admin', label: 'Admin', icon: '🔑' }] : []),
           ].map(link => {
@@ -179,6 +188,7 @@ export function Sidebar({ user, isAdmin }: Props) {
 
       {/* User + Sign out */}
       <div style={{ padding: '0 0.625rem', borderTop: '1px solid var(--border)', paddingTop: '0.875rem', marginTop: '0.875rem' }}>
+        <WorkspaceSwitcher actingAs={user.actingAs ?? false} currentName={user.name} />
         <div style={{ padding: '0.25rem 0.75rem 0.5rem' }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.name || user.email}

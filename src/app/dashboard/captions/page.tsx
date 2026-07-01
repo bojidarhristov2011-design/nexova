@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { usePersistedState } from '@/hooks/usePersistedState'
+import { resizeImage } from '@/lib/imageResize'
 
 const inp: React.CSSProperties = { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 10, padding: '0.65rem 0.875rem', fontSize: '0.9rem', outline: 'none', fontFamily: 'inherit' }
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem' }
@@ -13,6 +14,29 @@ export default function CaptionsPage() {
   const [result, setResult] = usePersistedState('caption_result', '')
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState<number | null>(null)
+  const [photo, setPhoto] = useState<string | null>(null)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduled, setScheduled] = useState<number | null>(null)
+  const [scheduling, setScheduling] = useState<number | null>(null)
+
+  async function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhoto(await resizeImage(file))
+  }
+
+  async function scheduleCaption(caption: string, idx: number) {
+    if (!scheduleDate) return
+    setScheduling(idx)
+    try {
+      await fetch('/api/scheduler', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: caption, scheduledAt: new Date(scheduleDate).toISOString(), platform: platform.toLowerCase(), imageData: photo }),
+      })
+      setScheduled(idx)
+      setTimeout(() => setScheduled(null), 3000)
+    } finally { setScheduling(null) }
+  }
 
   async function generate() {
     if (!topic) return

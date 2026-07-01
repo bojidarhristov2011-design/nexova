@@ -63,7 +63,7 @@ export default async function LandingPage() {
 
         <div style={{ position: 'relative', maxWidth: 820, margin: '0 auto' }}>
           <div style={{ display: 'inline-block', background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 999, padding: '0.3rem 1rem', fontSize: '0.8rem', fontWeight: 600, color: '#a78bfa', letterSpacing: '0.05em', marginBottom: '2rem' }}>
-            3-DAY FREE TRIAL · NO CARD REQUIRED
+            BUILT FOR YOUR BUSINESS · PAY ONLY WHEN IT WORKS
           </div>
 
           <h1 style={{ fontSize: 'clamp(2.75rem, 7vw, 5rem)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.05, color: '#fff', margin: '0 0 1.5rem' }}>
@@ -85,7 +85,6 @@ export default async function LandingPage() {
               Already a member
             </Link>
           </div>
-          <p style={{ color: '#334155', fontSize: '0.8125rem', margin: 0 }}>3 days free, then €20/month or €200/year</p>
         </div>
       </section>
 
@@ -94,8 +93,8 @@ export default async function LandingPage() {
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', textAlign: 'center', gap: '1rem' }}>
           {[
             { num: '22+', label: 'Automation tools' },
-            { num: '3 days', label: 'Free trial, no card' },
-            { num: '< 5 min', label: 'Setup time' },
+            { num: '0', label: 'Subscriptions or recurring fees' },
+            { num: '< 1 week', label: 'Typical setup time' },
           ].map(s => (
             <div key={s.label}>
               <div style={{ fontSize: '2.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em', marginBottom: 4 }}>{s.num}</div>
@@ -122,60 +121,29 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
+      {/* How it works */}
       <section style={{ padding: '2rem 2rem 6rem', maxWidth: 760, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>One price. Everything included.</h2>
-          <p style={{ color: '#475569', fontSize: '1rem', margin: 0 }}>Start free for 3 days. No credit card needed.</p>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Built for your business, not off the shelf</h2>
+          <p style={{ color: '#475569', fontSize: '1rem', margin: 0 }}>We set up exactly the automation you need — you only pay once it's working.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-          {/* Monthly */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, padding: '2rem' }}>
-            <p style={{ color: '#475569', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Monthly</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€20</span>
-              <span style={{ color: '#475569', fontSize: '0.9rem' }}>/month</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
+          {[
+            { step: '1', title: 'We talk', desc: 'Tell us your biggest time-waster — missed leads, no-shows, late payments, whatever it is.' },
+            { step: '2', title: 'We build it', desc: 'We set up the exact automation for your business using Nexova — ready in a few days.' },
+            { step: '3', title: 'You pay once it works', desc: 'See it running before you pay. Simple invoice, no subscriptions, no surprises.' },
+          ].map(s => (
+            <div key={s.step} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.75rem 1.5rem' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(124,58,237,0.15)', color: '#a78bfa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginBottom: '1rem' }}>{s.step}</div>
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: '0 0 0.5rem' }}>{s.title}</h3>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>{s.desc}</p>
             </div>
-            <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>Cancel any time</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              {['All 22+ automation tools', 'Unlimited AI generations', 'Unlimited contacts & invoices', 'AI chatbots with embed code', 'Email support'].map(item => (
-                <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>
-                  <span style={{ color: '#7c3aed', flexShrink: 0 }}>✓</span> {item}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" style={{ display: 'block', textAlign: 'center', background: 'rgba(124,58,237,0.12)', color: '#a78bfa', textDecoration: 'none', borderRadius: 10, padding: '0.8rem', fontSize: '0.9rem', fontWeight: 600, border: '1px solid rgba(124,58,237,0.2)' }}>
-              Start free trial
-            </Link>
-          </div>
-
-          {/* Yearly — highlighted */}
-          <div style={{ background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.28)', borderRadius: 20, padding: '2rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 16, right: 16, background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', color: '#fff', borderRadius: 6, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.04em' }}>
-              BEST VALUE
-            </div>
-            <p style={{ color: '#a78bfa', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 1.25rem' }}>Yearly</p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.25rem' }}>
-              <span style={{ fontSize: '3.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.04em' }}>€200</span>
-              <span style={{ color: '#475569', fontSize: '0.9rem' }}>/year</span>
-            </div>
-            <p style={{ color: '#334155', fontSize: '0.8rem', margin: '0 0 2rem' }}>€16.67/month — save €40 vs monthly</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 2rem', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-              {['Everything in Monthly', 'Priority support', 'Early access to new features', 'Onboarding call included', 'Lock in today\'s price forever'].map(item => (
-                <li key={item} style={{ display: 'flex', gap: 8, color: '#64748b', fontSize: '0.875rem' }}>
-                  <span style={{ color: '#a78bfa', flexShrink: 0 }}>✓</span> {item}
-                </li>
-              ))}
-            </ul>
-            <Link href="/signup" style={{ display: 'block', textAlign: 'center', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', color: '#fff', textDecoration: 'none', borderRadius: 10, padding: '0.8rem', fontSize: '0.9rem', fontWeight: 700, boxShadow: '0 4px 20px rgba(124,58,237,0.35)' }}>
-              Start free trial
-            </Link>
-          </div>
+          ))}
         </div>
 
-        <p style={{ textAlign: 'center', color: '#1e293b', fontSize: '0.8rem', marginTop: '1.5rem' }}>
-          After your 3-day trial, choose a plan. Cancel any time — no questions asked.
+        <p style={{ textAlign: 'center', color: '#1e293b', fontSize: '0.8rem', marginTop: '2rem' }}>
+          Already have access? <Link href="/login" style={{ color: '#a78bfa' }}>Log in</Link>
         </p>
       </section>
 
