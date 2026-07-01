@@ -31,6 +31,8 @@ export async function PUT(request: Request) {
       contentTone:     body.contentTone     ?? 'professional',
       ...(body.autoNurtureOnLead !== undefined ? { autoNurtureOnLead: body.autoNurtureOnLead } : {}),
       ...(body.autoReplyOnLeadCapture !== undefined ? { autoReplyOnLeadCapture: body.autoReplyOnLeadCapture } : {}),
+      ...(body.emailFrom !== undefined ? { emailFrom: body.emailFrom } : {}),
+      ...(body.emailPassword !== undefined ? { emailPassword: body.emailPassword } : {}),
     },
     create: {
       userId:          session.user.id,

@@ -81,6 +81,8 @@ model UserSettings {
   contentTone     String  @default("professional")
   autoNurtureOnLead      Boolean @default(false)
   autoReplyOnLeadCapture Boolean @default(false)
+  emailFrom       String  @default("")
+  emailPassword   String  @default("")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

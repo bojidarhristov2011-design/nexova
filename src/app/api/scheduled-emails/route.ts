@@ -53,16 +53,22 @@ export async function PATCH() {
 
   if (due.length === 0) return NextResponse.json({ sent: 0 })
 
+  // Use the account's own email credentials if configured
+  const settings = await db.userSettings.findUnique({ where: { userId: session.user.id } })
+  const fromEmail = settings?.emailFrom || process.env.EMAIL_FROM || ''
+  const fromPass  = settings?.emailPassword || process.env.EMAIL_PASSWORD || ''
+  const fromName  = settings?.businessName || ''
+
   const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: process.env.EMAIL_FROM, pass: process.env.EMAIL_PASSWORD },
+    auth: { user: fromEmail, pass: fromPass },
   })
 
   let sent = 0
   for (const email of due) {
     try {
       await transporter.sendMail({
-        from: `<${process.env.EMAIL_FROM}>`,
+        from: fromName ? `"${fromName}" <${fromEmail}>` : `<${fromEmail}>`,
         to: email.to,
         subject: email.subject,
         text: email.body,

@@ -22,6 +22,7 @@ export default function SettingsPage() {
     businessName: '', businessDesc: '', telegramToken: '',
     telegramChannel: '', tiktokHandle: '', contentTone: 'professional',
     autoNurtureOnLead: false, autoReplyOnLeadCapture: false,
+    emailFrom: '', emailPassword: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -176,6 +177,25 @@ export default function SettingsPage() {
               placeholder="e.g. We sell handmade cakes and pastries in Sofia. We deliver in 24 hours."
             />
             <p style={hint}>The AI uses this to generate relevant content and emails for your business.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Email sending */}
+      <div style={card}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', marginTop: 0 }}>📧 Email Sending</h2>
+        <p style={{ color: 'var(--dim)', fontSize: '0.8125rem', marginBottom: '1rem', marginTop: 0 }}>
+          Emails to leads will be sent FROM this address. Leave blank to use the platform default.
+          <br />To get an app password: Google Account → Security → 2-Step Verification → App passwords → create one for "Mail".
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.875rem' }}>
+          <div>
+            <span style={lbl}>Gmail address</span>
+            <input style={inp} type="email" value={form.emailFrom} onChange={e => set('emailFrom', e.target.value)} placeholder="gogonikolov@gmail.com" />
+          </div>
+          <div>
+            <span style={lbl}>Gmail App Password (not your normal password)</span>
+            <input style={inp} type="password" value={form.emailPassword} onChange={e => set('emailPassword', e.target.value)} placeholder="xxxx xxxx xxxx xxxx" />
           </div>
         </div>
       </div>

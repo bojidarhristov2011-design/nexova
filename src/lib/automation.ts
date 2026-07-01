@@ -69,13 +69,18 @@ export async function sendInstantAutoReply(userId: string, contactName: string, 
   const settings = await db.userSettings.findUnique({ where: { userId } })
   const businessName = settings?.businessName || 'us'
 
+  // Use the client's own Gmail if configured, otherwise fall back to platform email
+  const fromEmail = settings?.emailFrom || process.env.EMAIL_FROM || ''
+  const fromPass  = settings?.emailPassword || process.env.EMAIL_PASSWORD || ''
+  if (!fromEmail || !fromPass) return false
+
   try {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: process.env.EMAIL_FROM, pass: process.env.EMAIL_PASSWORD },
+      auth: { user: fromEmail, pass: fromPass },
     })
     await transporter.sendMail({
-      from: `"${businessName}" <${process.env.EMAIL_FROM}>`,
+      from: `"${businessName}" <${fromEmail}>`,
       to: contactEmail,
       subject: `Thanks for reaching out to ${businessName}!`,
       text: `Hi ${contactName},\n\nThanks for getting in touch with ${businessName} — we received your message and will get back to you shortly.\n\nTalk soon,\n${businessName}`,
