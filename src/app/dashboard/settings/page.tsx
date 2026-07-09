@@ -37,6 +37,9 @@ export default function SettingsPage() {
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null)
   const [newBizName, setNewBizName] = useState('')
   const [addingBiz, setAddingBiz] = useState(false)
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
+  const [pwMsg, setPwMsg] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
 
   const loadAccess = useCallback(async () => {
     const res = await fetch('/api/team-access')
@@ -359,6 +362,43 @@ export default function SettingsPage() {
       >
         {saving ? 'Saving...' : saved ? '✓ Saved!' : 'Save Settings'}
       </button>
+
+      {/* Change Password */}
+      <div style={{ ...card, marginTop: '1.5rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', marginTop: 0 }}>🔒 Change Password</h2>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.875rem' }}>
+          <div>
+            <span style={lbl}>Current Password</span>
+            <input style={inp} type="password" value={pwForm.current} onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))} placeholder="Your current password" />
+          </div>
+          <div>
+            <span style={lbl}>New Password</span>
+            <input style={inp} type="password" value={pwForm.next} onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))} placeholder="New password" />
+          </div>
+          <div>
+            <span style={lbl}>Confirm New Password</span>
+            <input style={inp} type="password" value={pwForm.confirm} onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))} placeholder="Repeat new password" />
+          </div>
+          {pwMsg && <div style={{ fontSize: '0.825rem', color: pwMsg.startsWith('✓') ? '#86efac' : '#fca5a5' }}>{pwMsg}</div>}
+          <button
+            disabled={pwSaving}
+            onClick={async () => {
+              if (!pwForm.current || !pwForm.next) return setPwMsg('Fill in all fields.')
+              if (pwForm.next !== pwForm.confirm) return setPwMsg('Passwords do not match.')
+              if (pwForm.next.length < 6) return setPwMsg('New password must be at least 6 characters.')
+              setPwSaving(true); setPwMsg('')
+              const res = await fetch('/api/auth/change-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ current: pwForm.current, next: pwForm.next }) })
+              const data = await res.json()
+              setPwMsg(res.ok ? '✓ Password changed!' : data.error || 'Failed.')
+              if (res.ok) setPwForm({ current: '', next: '', confirm: '' })
+              setPwSaving(false)
+            }}
+            style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.65rem 1.5rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' as const, opacity: pwSaving ? 0.6 : 1 }}
+          >
+            {pwSaving ? 'Saving...' : 'Change Password'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
