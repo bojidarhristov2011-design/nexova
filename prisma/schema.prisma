@@ -28,6 +28,18 @@ model User {
   accessGiven    TeamAccess[] @relation("OwnerAccess")
   accessReceived TeamAccess[] @relation("CollaboratorAccess")
   businesses     Business[]
+  features       UserFeature[]
+  staff          Staff[]
+  surveys        Survey[]
+}
+
+model UserFeature {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug      String
+  createdAt DateTime @default(now())
+  @@unique([userId, slug])
 }
 
 model Business {
@@ -155,10 +167,33 @@ model Contact {
   email     String?
   phone     String?
   company   String?
-  status    String   @default("lead") // lead | customer | lost
-  notes     String?
+  status        String   @default("lead") // lead | customer | lost
+  notes         String?
+  birthday      String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  role      String   @default("")
+  email     String?
+  phone     String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+model Survey {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  questions String
+  responses String   @default("[]")
+  createdAt DateTime @default(now())
 }
 
 model ScheduledPost {
