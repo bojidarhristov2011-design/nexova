@@ -9,8 +9,8 @@ interface Turn {
 }
 
 const SUGGESTIONS = [
-  'Send a re-engagement email to all clients who are customers',
-  'Find clients with birthdays this week and send them a birthday offer',
+  'Send a re-engagement email to all customers',
+  'Send a follow-up email to all leads',
   'Show me my platform stats',
   'Schedule a promotion email to all customers for tomorrow morning',
   'Add 50 loyalty points to all customers',

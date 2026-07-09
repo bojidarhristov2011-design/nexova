@@ -7,7 +7,6 @@ interface UserWithFeatures { id: string; email: string; name: string | null; fea
 const PREMIUM_FEATURES = [
   { slug: 'qr-generator',       label: 'QR Code Generator' },
   { slug: 'review-requests',    label: 'Review Request Sender' },
-  { slug: 'birthday-messages',  label: 'Birthday Messages' },
   { slug: 'loyalty',            label: 'Loyalty Points' },
   { slug: 'staff',              label: 'Staff Management' },
   { slug: 'surveys',            label: 'Customer Surveys' },

@@ -26,27 +26,13 @@ const TOOLS: Groq.Tool[] = [
   {
     type: 'function',
     function: {
-      name: 'get_upcoming_birthdays',
-      description: 'Get contacts who have a birthday in the next X days',
-      parameters: {
-        type: 'object',
-        required: ['days'],
-        properties: {
-          days: { type: 'number', description: 'Days ahead to look for birthdays' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
       name: 'generate_email_content',
       description: 'Write a professional email subject and body for a given purpose. Returns {subject, body}.',
       parameters: {
         type: 'object',
         required: ['purpose'],
         properties: {
-          purpose: { type: 'string', description: 'Email purpose e.g. "re-engagement", "birthday offer", "appointment reminder", "promotion"' },
+          purpose: { type: 'string', description: 'Email purpose e.g. "re-engagement", "appointment reminder", "promotion", "follow-up"' },
           tone: { type: 'string', enum: ['friendly', 'professional', 'urgent', 'warm'], description: 'Tone of the email' },
           include_offer: { type: 'string', description: 'Optional special offer or discount to mention' },
         },
@@ -151,25 +137,11 @@ async function executeTool(
     return {
       result: contacts.map(c => ({
         id: c.id, name: c.name, email: c.email, phone: c.phone,
-        status: c.status, loyaltyPoints: c.loyaltyPoints, birthday: c.birthday,
+        status: c.status, loyaltyPoints: c.loyaltyPoints,
       })),
     }
   }
 
-  if (name === 'get_upcoming_birthdays') {
-    const days = (args.days as number) || 7
-    const contacts = await prisma.contact.findMany({ where: { userId, birthday: { not: null } } })
-    const today = new Date()
-    const upcoming = contacts.filter(c => {
-      if (!c.birthday) return false
-      const bday = new Date(c.birthday)
-      const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate())
-      if (thisYear < today) thisYear.setFullYear(today.getFullYear() + 1)
-      const diff = Math.ceil((thisYear.getTime() - today.getTime()) / 86400000)
-      return diff <= days && diff >= 0
-    })
-    return { result: upcoming.map(c => ({ id: c.id, name: c.name, email: c.email, birthday: c.birthday })) }
-  }
 
   if (name === 'generate_email_content') {
     const completion = await groq.chat.completions.create({
@@ -298,7 +270,6 @@ ${biz.businessDesc ? `\nBusiness: ${biz.businessDesc}` : ''}
 
 You have tools to:
 • Search and query CRM contacts
-• Find clients with upcoming birthdays
 • Write professional emails
 • Schedule email campaigns to multiple contacts automatically
 • Check platform stats
@@ -309,7 +280,6 @@ You have tools to:
 IMPORTANT: When someone describes a problem or goal, take action with your tools — don't just give advice.
 Chain tools together to complete the full task. For example:
 - "Send re-engagement emails" → get_contacts → generate_email_content → schedule_emails_to_contacts
-- "Birthday messages this week" → get_upcoming_birthdays → generate_email_content → schedule_emails_to_contacts
 
 After completing actions, briefly summarise what you did.
 

@@ -80,7 +80,6 @@ const CORE_SECTIONS = [
 const PREMIUM_LINKS: Record<string, { href: string; label: string; icon: string; section: string }> = {
   'qr-generator':       { href: '/dashboard/qr-generator',       label: 'QR Generator',        icon: '📱', section: 'Premium' },
   'review-requests':    { href: '/dashboard/review-requests',     label: 'Review Requests',     icon: '⭐', section: 'Premium' },
-  'birthday-messages':  { href: '/dashboard/birthday-messages',   label: 'Birthday Messages',   icon: '🎂', section: 'Premium' },
   'loyalty':            { href: '/dashboard/loyalty',             label: 'Loyalty Points',      icon: '🏆', section: 'Premium' },
   'staff':              { href: '/dashboard/staff',               label: 'Staff Management',    icon: '👤', section: 'Premium' },
   'surveys':            { href: '/dashboard/surveys',             label: 'Surveys',             icon: '📋', section: 'Premium' },
