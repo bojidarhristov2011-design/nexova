@@ -70,10 +70,8 @@ const CORE_SECTIONS = [
   {
     label: 'Automate',
     links: [
-      { href: '/dashboard/operator',          label: 'Business Operator', icon: '◈' },
-      { href: '/dashboard/sales-automation',  label: 'Sales Automation',  icon: '📈' },
-      { href: '/dashboard/agents',            label: 'Chat Agents',       icon: '💬' },
-      { href: '/dashboard/receptionist',      label: 'AI Receptionist',   icon: '🤖' },
+      { href: '/dashboard/ai-operator',   label: 'AI Operator',      icon: '⚡' },
+      { href: '/dashboard/receptionist',  label: 'AI Receptionist',  icon: '🤖' },
     ],
   },
 ]
