@@ -80,12 +80,21 @@ const CORE_SECTIONS = [
 
 // Premium features — only shown if user has the slug enabled
 const PREMIUM_LINKS: Record<string, { href: string; label: string; icon: string; section: string }> = {
-  'qr-generator':       { href: '/dashboard/qr-generator',      label: 'QR Generator',       icon: '📱', section: 'Premium' },
-  'review-requests':    { href: '/dashboard/review-requests',    label: 'Review Requests',    icon: '⭐', section: 'Premium' },
-  'birthday-messages':  { href: '/dashboard/birthday-messages',  label: 'Birthday Messages',  icon: '🎂', section: 'Premium' },
-  'loyalty':            { href: '/dashboard/loyalty',            label: 'Loyalty Points',     icon: '🏆', section: 'Premium' },
-  'staff':              { href: '/dashboard/staff',              label: 'Staff Management',   icon: '👤', section: 'Premium' },
-  'surveys':            { href: '/dashboard/surveys',            label: 'Surveys',            icon: '📋', section: 'Premium' },
+  'qr-generator':       { href: '/dashboard/qr-generator',       label: 'QR Generator',        icon: '📱', section: 'Premium' },
+  'review-requests':    { href: '/dashboard/review-requests',     label: 'Review Requests',     icon: '⭐', section: 'Premium' },
+  'birthday-messages':  { href: '/dashboard/birthday-messages',   label: 'Birthday Messages',   icon: '🎂', section: 'Premium' },
+  'loyalty':            { href: '/dashboard/loyalty',             label: 'Loyalty Points',      icon: '🏆', section: 'Premium' },
+  'staff':              { href: '/dashboard/staff',               label: 'Staff Management',    icon: '👤', section: 'Premium' },
+  'surveys':            { href: '/dashboard/surveys',             label: 'Surveys',             icon: '📋', section: 'Premium' },
+  'sms-campaigns':      { href: '/dashboard/sms-campaigns',       label: 'SMS Campaigns',       icon: '💬', section: 'Premium' },
+  'waitlist':           { href: '/dashboard/waitlist',            label: 'Waitlist Manager',    icon: '⏳', section: 'Premium' },
+  'gift-cards':         { href: '/dashboard/gift-cards',          label: 'Gift Cards',          icon: '🎁', section: 'Premium' },
+  'inventory':          { href: '/dashboard/inventory',           label: 'Inventory Tracker',   icon: '📦', section: 'Premium' },
+  'bundle-builder':     { href: '/dashboard/bundle-builder',      label: 'Bundle Builder',      icon: '📦', section: 'Premium' },
+  'photo-gallery':      { href: '/dashboard/photo-gallery',       label: 'Photo Gallery',       icon: '📸', section: 'Premium' },
+  'referral-program':   { href: '/dashboard/referral-program',    label: 'Referral Program',    icon: '🤝', section: 'Premium' },
+  'tiktok-scripts':     { href: '/dashboard/tiktok-scripts',      label: 'TikTok Scripts',      icon: '🎵', section: 'Premium' },
+  'payment-links':      { href: '/dashboard/payment-links',       label: 'Payment Links',       icon: '💳', section: 'Premium' },
 }
 
 export function Sidebar({ user, isAdmin }: Props) {

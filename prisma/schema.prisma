@@ -31,6 +31,10 @@ model User {
   features       UserFeature[]
   staff          Staff[]
   surveys        Survey[]
+  inventory      InventoryItem[]
+  giftCards      GiftCard[]
+  bundles        Bundle[]
+  waitlist       WaitlistEntry[]
 }
 
 model UserFeature {
@@ -193,6 +197,51 @@ model Survey {
   title     String
   questions String
   responses String   @default("[]")
+  createdAt DateTime @default(now())
+}
+
+model InventoryItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  quantity  Int      @default(0)
+  unit      String   @default("")
+  lowAlert  Int      @default(5)
+  createdAt DateTime @default(now())
+}
+
+model GiftCard {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  amount    Float
+  used      Boolean  @default(false)
+  recipient String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model Bundle {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  services    String
+  price       Float
+  createdAt   DateTime @default(now())
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  service   String   @default("")
+  status    String   @default("waiting")
   createdAt DateTime @default(now())
 }
 
