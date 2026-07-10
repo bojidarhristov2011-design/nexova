@@ -70,7 +70,7 @@ export default function AIOperatorPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          {['📋 CRM', '📧 Emails', '🎂 Birthdays', '🏆 Loyalty', '⏳ Waitlist', '📊 Stats'].map(cap => (
+          {['📋 CRM', '📧 Emails', '🏆 Loyalty', '⏳ Waitlist', '📊 Stats', '👥 Contacts'].map(cap => (
             <span key={cap} style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(124,58,237,0.1)', color: '#a78bfa', fontSize: 12, fontWeight: 500 }}>{cap}</span>
           ))}
         </div>
@@ -146,7 +146,7 @@ export default function AIOperatorPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            placeholder="e.g. Send a promotion to all customers, or find clients with birthdays this month..."
+            placeholder="e.g. Send a promotion to all customers, or follow up with all leads..."
             rows={2}
             style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14, resize: 'none', fontFamily: 'inherit' }}
           />

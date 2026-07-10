@@ -52,7 +52,7 @@ const TOOLS: Groq.Tool[] = [
           subject: { type: 'string', description: 'Email subject line' },
           body: { type: 'string', description: 'Email body. Use {name} to personalise.' },
           send_at: { type: 'string', description: 'ISO datetime string, or "now" to send immediately' },
-          label: { type: 'string', description: 'Campaign label e.g. "Birthday Campaign"' },
+          label: { type: 'string', description: 'Campaign label e.g. "Re-engagement Campaign"' },
         },
       },
     },
