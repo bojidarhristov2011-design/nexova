@@ -129,8 +129,11 @@ const CORE_SECTIONS = [
   {
     label: 'Automate',
     links: [
-      { href: '/dashboard/ai-operator',  label: 'AI Operator',     icon: 'zap' },
-      { href: '/dashboard/receptionist', label: 'AI Receptionist', icon: 'headphones' },
+      { href: '/dashboard/ai-operator',      label: 'AI Operator',       icon: 'zap' },
+      { href: '/dashboard/receptionist',     label: 'AI Receptionist',   icon: 'headphones' },
+      { href: '/dashboard/agents',           label: 'Chat Agents',        icon: 'msg-circle' },
+      { href: '/dashboard/operator',         label: 'Business Operator',  icon: 'briefcase' },
+      { href: '/dashboard/sales-automation', label: 'Sales Automation',   icon: 'share-2' },
     ],
   },
 ]
