@@ -9,13 +9,15 @@ interface Turn {
 }
 
 const SUGGESTIONS = [
-  'Send a re-engagement email to all customers',
-  'Send a follow-up email to all leads',
-  'Show me my platform stats',
-  'Schedule a promotion email to all customers for tomorrow morning',
-  'Add 50 loyalty points to all customers',
-  'Who are my leads? Show me the list.',
+  'I lose clients who don\'t come back after their first visit',
+  'My leads never convert — they just go cold',
+  'I want to reward my loyal customers but do it automatically',
+  'Clients keep forgetting their appointments',
+  'I don\'t know which of my customers are most valuable',
+  'I want to run a promotion but don\'t know how to reach everyone',
 ]
+
+const DRAFT_KEY = 'ai-operator-draft'
 
 export default function AIOperatorPage() {
   const [turns, setTurns] = useState<Turn[]>([])
@@ -23,10 +25,32 @@ export default function AIOperatorPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const restoredRef = useRef(false)
+
+  // Restore draft on mount (client-only)
+  useEffect(() => {
+    const saved = localStorage.getItem(DRAFT_KEY)
+    if (saved) setInput(saved)
+    restoredRef.current = true
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [turns, loading])
+
+  function handleInputChange(val: string) {
+    setInput(val)
+    if (!restoredRef.current) return
+    if (val) localStorage.setItem(DRAFT_KEY, val)
+    else localStorage.removeItem(DRAFT_KEY)
+  }
+
+  function newChat() {
+    setTurns([])
+    setHistory([])
+    setInput('')
+    localStorage.removeItem(DRAFT_KEY)
+  }
 
   async function send(text?: string) {
     const msg = text || input
@@ -37,6 +61,7 @@ export default function AIOperatorPage() {
     const newHistory = [...history, { role: 'user', content: msg }]
     setHistory(newHistory)
     setInput('')
+    localStorage.removeItem(DRAFT_KEY)
     setLoading(true)
 
     try {
@@ -62,16 +87,32 @@ export default function AIOperatorPage() {
 
       {/* Header */}
       <div style={{ padding: '28px 0 20px', borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>⚡</div>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>AI Operator</h1>
-            <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>Describe a problem — I build the automation and execute it for you</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>⚡</div>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>AI Operator</h1>
+              <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>Describe a problem — I'll advise you and build the solution inside Nexova</p>
+            </div>
           </div>
+          {turns.length > 0 && (
+            <button onClick={newChat} style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 13, cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              + New chat
+            </button>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          {['📋 CRM', '📧 Emails', '🏆 Loyalty', '⏳ Waitlist', '📊 Stats', '👥 Contacts'].map(cap => (
-            <span key={cap} style={{ padding: '3px 10px', borderRadius: 20, background: 'rgba(124,58,237,0.1)', color: '#a78bfa', fontSize: 12, fontWeight: 500 }}>{cap}</span>
+          {[
+            { label: 'CRM', icon: '▤' },
+            { label: 'Emails', icon: '✉' },
+            { label: 'Loyalty', icon: '◈' },
+            { label: 'Waitlist', icon: '◷' },
+            { label: 'Stats', icon: '▲' },
+            { label: 'Contacts', icon: '◉' },
+          ].map(({ label, icon }) => (
+            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, background: 'rgba(124,58,237,0.1)', color: '#a78bfa', fontSize: 12, fontWeight: 500 }}>
+              <span style={{ fontSize: 11, opacity: 0.8 }}>{icon}</span>{label}
+            </span>
           ))}
         </div>
       </div>
@@ -81,7 +122,7 @@ export default function AIOperatorPage() {
 
         {turns.length === 0 && (
           <div>
-            <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>Try one of these:</p>
+            <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>Describe a business problem you're facing:</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {SUGGESTIONS.map(s => (
                 <button key={s} onClick={() => send(s)}
@@ -131,7 +172,7 @@ export default function AIOperatorPage() {
                   <div key={n} style={{ width: 7, height: 7, borderRadius: '50%', background: '#7c3aed', opacity: 0.4, animation: `bounce 1.2s ${n * 0.2}s infinite` }} />
                 ))}
               </div>
-              <span style={{ fontSize: 13, color: 'var(--muted)' }}>Working on it...</span>
+              <span style={{ fontSize: 13, color: 'var(--muted)' }}>Thinking...</span>
             </div>
           </div>
         )}
@@ -144,9 +185,9 @@ export default function AIOperatorPage() {
         <div style={{ display: 'flex', gap: 10 }}>
           <textarea
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => handleInputChange(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            placeholder="e.g. Send a promotion to all customers, or follow up with all leads..."
+            placeholder="Describe a problem you're facing in your business..."
             rows={2}
             style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14, resize: 'none', fontFamily: 'inherit' }}
           />
