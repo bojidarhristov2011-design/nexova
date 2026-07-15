@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { contacts, offer, problem, target } = await req.json()
+  const { contacts, offer, problem, target, customSubject, customBody } = await req.json()
   // contacts: [{ name: string, email: string }]
   if (!contacts?.length) return NextResponse.json({ error: 'No contacts provided' }, { status: 400 })
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     model: 'llama-3.3-70b-versatile',
     messages: [{
       role: 'user',
-      content: `Write a short, effective cold email for outreach.
+      content: `Write a cold outreach email that sounds like a real person wrote it — not a marketer, not a robot.
 
 Sender: ${senderName}
 Target: ${target || 'local businesses'}
@@ -38,27 +38,37 @@ Our offer: ${offer || 'AI automation system that brings clients back automatical
 
 Rules:
 - Use {name} as the recipient name placeholder
-- Maximum 5 sentences
-- Lead with their problem, not our product
-- One clear CTA at the end (reply if interested)
-- No fluff, no "I hope this email finds you well"
-- Sound like a real person, not a salesperson
+- 3-4 sentences max. Short. Direct.
+- Start with something specific about their situation, not "I hope this finds you well"
+- No buzzwords: no "leverage", "synergy", "cutting-edge", "revolutionize"
+- No exclamation marks
+- Sound like you're texting a business owner you respect, not pitching to a crowd
+- One soft CTA at the end: "Worth a quick chat?" or "Let me know if this is relevant"
+- Sign off with just the sender name, no title
 
-Reply with ONLY this format:
+Reply with ONLY this format (nothing else):
 Subject: [subject line]
 
 [email body]`,
     }],
-    temperature: 0.7,
+    temperature: 0.8,
   })
 
   const template = completion.choices[0]?.message?.content?.trim() || ''
 
-  // Parse subject and body
-  const lines = template.split('\n')
-  const subjectLine = lines.find(l => l.startsWith('Subject:')) || 'Subject: Quick question'
-  const subject = subjectLine.replace('Subject:', '').trim()
-  const body = lines.filter(l => !l.startsWith('Subject:')).join('\n').trim()
+  // Use custom email or parse AI-generated one
+  let subject: string
+  let body: string
+
+  if (customSubject && customBody) {
+    subject = customSubject
+    body = customBody
+  } else {
+    const lines = template.split('\n')
+    const subjectLine = lines.find(l => l.startsWith('Subject:')) || 'Subject: Quick question'
+    subject = subjectLine.replace('Subject:', '').trim()
+    body = lines.filter(l => !l.startsWith('Subject:')).join('\n').trim()
+  }
 
   // Send to each contact
   const transporter = nodemailer.createTransport({

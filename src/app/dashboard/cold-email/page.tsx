@@ -43,6 +43,9 @@ export default function ColdEmailPage() {
   const [bulkOffer, setBulkOffer] = usePersistedState('bulk_offer', '')
   const [bulkProblem, setBulkProblem] = usePersistedState('bulk_problem', '')
   const [bulkTarget, setBulkTarget] = usePersistedState('bulk_target', '')
+  const [bulkMode, setBulkMode] = usePersistedState<'ai' | 'custom'>('bulk_mode', 'ai')
+  const [customSubject, setCustomSubject] = usePersistedState('bulk_custom_subject', '')
+  const [customBody, setCustomBody] = usePersistedState('bulk_custom_body', '')
   const [bulkLoading, setBulkLoading] = useState(false)
   const [bulkResults, setBulkResults] = useState<{ name: string; email: string; success: boolean }[]>([])
   const [bulkTemplate, setBulkTemplate] = useState('')
@@ -105,12 +108,19 @@ export default function ColdEmailPage() {
 
   async function sendBulk() {
     if (!parsedContacts.length) return
+    if (bulkMode === 'custom' && (!customSubject || !customBody)) return
     setBulkLoading(true); setBulkError(''); setBulkResults([]); setBulkTemplate('')
     try {
       const res = await fetch('/api/cold-email/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contacts: parsedContacts, offer: bulkOffer, problem: bulkProblem, target: bulkTarget }),
+        body: JSON.stringify({
+          contacts: parsedContacts,
+          offer: bulkOffer,
+          problem: bulkProblem,
+          target: bulkTarget,
+          ...(bulkMode === 'custom' ? { customSubject, customBody } : {}),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -146,13 +156,30 @@ export default function ColdEmailPage() {
       {tab === 'bulk' && (
         <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: '1.5rem', alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Email mode toggle */}
             <div style={card}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', marginTop: 0 }}>Campaign details</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input value={bulkTarget} onChange={e => setBulkTarget(e.target.value)} placeholder="Target: e.g. козметични салони" style={input} />
-                <textarea value={bulkProblem} onChange={e => setBulkProblem(e.target.value)} rows={2} placeholder="Problem you solve: e.g. губят клиенти след първото посещение" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
-                <textarea value={bulkOffer} onChange={e => setBulkOffer(e.target.value)} rows={2} placeholder="Your offer: e.g. AI система, която автоматично пише на изчезналите клиенти" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
+              <h2 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', marginTop: 0 }}>Email content</h2>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                {(['ai', 'custom'] as const).map(m => (
+                  <button key={m} onClick={() => setBulkMode(m)}
+                    style={{ flex: 1, padding: '7px', borderRadius: 8, border: `1px solid ${bulkMode === m ? 'var(--accent)' : 'var(--border)'}`, background: bulkMode === m ? 'rgba(124,58,237,0.12)' : 'transparent', color: bulkMode === m ? '#a78bfa' : 'var(--muted)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {m === 'ai' ? 'AI writes it' : 'I write it'}
+                  </button>
+                ))}
               </div>
+              {bulkMode === 'ai' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input value={bulkTarget} onChange={e => setBulkTarget(e.target.value)} placeholder="Target: e.g. козметични салони" style={input} />
+                  <textarea value={bulkProblem} onChange={e => setBulkProblem(e.target.value)} rows={2} placeholder="Problem: e.g. губят клиенти след първото посещение" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
+                  <textarea value={bulkOffer} onChange={e => setBulkOffer(e.target.value)} rows={2} placeholder="Offer: e.g. AI система, която автоматично пише на изчезналите клиенти" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Subject line" style={input} />
+                  <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} rows={7} placeholder={'Write your email here...\n\nUse {name} to personalise with the contact\'s name.'} style={{ ...input, resize: 'vertical', lineHeight: 1.7 }} />
+                  <p style={{ color: 'var(--muted)', fontSize: '0.75rem', margin: 0 }}>Use <code style={{ background: 'var(--bg2)', padding: '1px 5px', borderRadius: 4 }}>{'{name}'}</code> to insert each contact&apos;s name automatically</p>
+                </div>
+              )}
             </div>
 
             <div style={card}>
@@ -170,10 +197,15 @@ export default function ColdEmailPage() {
               )}
             </div>
 
-            <button onClick={sendBulk} disabled={!parsedContacts.length || bulkLoading}
-              style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: parsedContacts.length && !bulkLoading ? 'pointer' : 'default', fontFamily: 'inherit', opacity: !parsedContacts.length || bulkLoading ? 0.5 : 1 }}>
-              {bulkLoading ? `Sending to ${parsedContacts.length} contacts...` : `Send to ${parsedContacts.length} contact${parsedContacts.length !== 1 ? 's' : ''}`}
-            </button>
+            {(() => {
+              const disabled = !parsedContacts.length || bulkLoading || (bulkMode === 'custom' && (!customSubject || !customBody))
+              return (
+                <button onClick={sendBulk} disabled={disabled}
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', opacity: disabled ? 0.5 : 1 }}>
+                  {bulkLoading ? `Sending to ${parsedContacts.length} contacts...` : `Send to ${parsedContacts.length} contact${parsedContacts.length !== 1 ? 's' : ''}`}
+                </button>
+              )
+            })()}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
