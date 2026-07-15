@@ -11,9 +11,8 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { contacts, offer, problem, target, customSubject, customBody } = await req.json()
-  // contacts: [{ name: string, email: string }]
-  if (!contacts?.length) return NextResponse.json({ error: 'No contacts provided' }, { status: 400 })
+  const { contacts, offer, problem, target, customSubject, customBody, previewOnly } = await req.json()
+  if (!previewOnly && !contacts?.length) return NextResponse.json({ error: 'No contacts provided' }, { status: 400 })
 
   const settings = await db.userSettings.findUnique({ where: { userId: session.user.id } })
   const senderName = settings?.businessName || session.user.name || 'Bojidar'
@@ -68,6 +67,11 @@ Subject: [subject line]
     const subjectLine = lines.find(l => l.startsWith('Subject:')) || 'Subject: Quick question'
     subject = subjectLine.replace('Subject:', '').trim()
     body = lines.filter(l => !l.startsWith('Subject:')).join('\n').trim()
+  }
+
+  // Preview only — return template without sending
+  if (previewOnly) {
+    return NextResponse.json({ subject, template: body })
   }
 
   // Send to each contact

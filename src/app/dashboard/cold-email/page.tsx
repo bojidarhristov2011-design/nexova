@@ -9,14 +9,33 @@ const input: React.CSSProperties = { width: '100%', background: 'var(--bg2)', bo
 const DAYS = [0, 3, 7]
 
 function parseContacts(text: string) {
-  return text.split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const parts = line.split(',').map(p => p.trim())
-      return { name: parts[0] || '', email: parts[1] || '' }
-    })
-    .filter(c => c.name && c.email && c.email.includes('@'))
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  const results: { name: string; email: string }[] = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    // Check if line contains an email
+    const emailMatch = line.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i)
+    if (emailMatch) {
+      const email = emailMatch[0]
+      const name = line.replace(email, '').replace(',', '').trim() || email.split('@')[0]
+      results.push({ name, email })
+      i++
+    } else if (i + 1 < lines.length) {
+      // Name on this line, email might be on next
+      const nextLine = lines[i + 1]
+      const nextEmail = nextLine.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i)
+      if (nextEmail) {
+        results.push({ name: line.replace(',', '').trim(), email: nextEmail[0] })
+        i += 2
+      } else {
+        i++
+      }
+    } else {
+      i++
+    }
+  }
+  return results
 }
 
 export default function ColdEmailPage() {
@@ -47,8 +66,11 @@ export default function ColdEmailPage() {
   const [customSubject, setCustomSubject] = usePersistedState('bulk_custom_subject', '')
   const [customBody, setCustomBody] = usePersistedState('bulk_custom_body', '')
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkGenerating, setBulkGenerating] = useState(false)
   const [bulkResults, setBulkResults] = useState<{ name: string; email: string; success: boolean }[]>([])
   const [bulkTemplate, setBulkTemplate] = useState('')
+  const [bulkPreviewSubject, setBulkPreviewSubject] = useState('')
+  const [bulkPreviewBody, setBulkPreviewBody] = useState('')
   const [bulkError, setBulkError] = useState('')
 
   const parsedContacts = parseContacts(bulkContacts)
@@ -106,6 +128,24 @@ export default function ColdEmailPage() {
     setScheduleDates(prev => { const next = [...prev]; next[idx] = val; return next })
   }
 
+  async function generatePreview() {
+    setBulkGenerating(true); setBulkError(''); setBulkPreviewSubject(''); setBulkPreviewBody('')
+    try {
+      const res = await fetch('/api/cold-email/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts: [], offer: bulkOffer, problem: bulkProblem, target: bulkTarget, previewOnly: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setBulkPreviewSubject(data.subject)
+      setBulkPreviewBody(data.template)
+    } catch (e: unknown) {
+      setBulkError(e instanceof Error ? e.message : 'Failed')
+    }
+    setBulkGenerating(false)
+  }
+
   async function sendBulk() {
     if (!parsedContacts.length) return
     if (bulkMode === 'custom' && (!customSubject || !customBody)) return
@@ -120,6 +160,7 @@ export default function ColdEmailPage() {
           problem: bulkProblem,
           target: bulkTarget,
           ...(bulkMode === 'custom' ? { customSubject, customBody } : {}),
+          ...(bulkMode === 'ai' && bulkPreviewSubject ? { customSubject: bulkPreviewSubject, customBody: bulkPreviewBody } : {}),
         }),
       })
       const data = await res.json()
@@ -197,7 +238,14 @@ export default function ColdEmailPage() {
               )}
             </div>
 
-            {(() => {
+            {bulkMode === 'ai' && !bulkPreviewSubject && (
+              <button onClick={generatePreview} disabled={bulkGenerating}
+                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: bulkGenerating ? 'default' : 'pointer', fontFamily: 'inherit', opacity: bulkGenerating ? 0.6 : 1 }}>
+                {bulkGenerating ? 'Generating email...' : 'Generate email'}
+              </button>
+            )}
+
+            {(bulkMode === 'custom' || bulkPreviewSubject) && (() => {
               const disabled = !parsedContacts.length || bulkLoading || (bulkMode === 'custom' && (!customSubject || !customBody))
               return (
                 <button onClick={sendBulk} disabled={disabled}
@@ -250,9 +298,28 @@ export default function ColdEmailPage() {
               </div>
             )}
 
-            {!bulkResults.length && !bulkLoading && (
+            {bulkPreviewSubject && !bulkResults.length && (
+              <div style={card}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <h3 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600 }}>Email preview</h3>
+                  <button onClick={() => { setBulkPreviewSubject(''); setBulkPreviewBody('') }}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 13 }}>
+                    Regenerate
+                  </button>
+                </div>
+                <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 13, color: 'var(--muted)' }}>
+                  Subject: <span style={{ color: 'var(--text)', fontWeight: 500 }}>{bulkPreviewSubject}</span>
+                </div>
+                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text)', fontSize: '0.875rem', lineHeight: 1.7, margin: 0 }}>{bulkPreviewBody}</pre>
+                <p style={{ color: 'var(--muted)', fontSize: '0.78rem', margin: '12px 0 0' }}>Looks good? Add your contacts and click Send.</p>
+              </div>
+            )}
+
+            {!bulkResults.length && !bulkLoading && !bulkPreviewSubject && (
               <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
-                <p style={{ color: 'var(--dim)', textAlign: 'center', margin: 0 }}>Paste your contact list and click Send</p>
+                <p style={{ color: 'var(--dim)', textAlign: 'center', margin: 0 }}>
+                  {bulkMode === 'ai' ? 'Fill in the details and click Generate email' : 'Write your email and paste your contact list'}
+                </p>
               </div>
             )}
           </div>
