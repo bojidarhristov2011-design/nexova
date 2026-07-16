@@ -21,6 +21,7 @@ const ghostBtn: React.CSSProperties = { background: 'var(--bg2)', color: 'var(--
 export default function EmailWriterPage() {
   const [selectedType, setSelectedType] = usePersistedState('email_type', '')
   const [context, setContext] = usePersistedState('email_context', '')
+  const [language, setLanguage] = usePersistedState('email_language', 'English')
   const [result, setResult] = usePersistedState('email_result', '')
   const [recipientEmail, setRecipientEmail] = usePersistedState('email_recipient', '')
   const [emailSubject, setEmailSubject] = usePersistedState('email_subject', '')
@@ -40,7 +41,7 @@ export default function EmailWriterPage() {
       const res = await fetch('/api/email-writer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: selectedType, context }),
+        body: JSON.stringify({ type: selectedType, context, language }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -130,6 +131,17 @@ export default function EmailWriterPage() {
               placeholder="Client is John from ABC Agency, invoice amount is €850, due since last week..."
               style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 10, padding: '0.75rem', fontSize: '0.875rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.6 }}
             />
+          </div>
+
+          {/* Language */}
+          <div style={card}>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.75rem', marginTop: 0 }}>3. Language</h2>
+            <select value={language} onChange={e => setLanguage(e.target.value)}
+              style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 10, padding: '0.7rem 0.9rem', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}>
+              {['English', 'Bulgarian', 'German', 'French', 'Spanish', 'Italian', 'Romanian', 'Dutch', 'Polish'].map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
           </div>
 
           <button

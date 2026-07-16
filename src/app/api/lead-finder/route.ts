@@ -7,12 +7,13 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { businessType, location } = await request.json()
+  const { businessType, location, noWebsiteOnly } = await request.json()
   if (!businessType) return NextResponse.json({ error: 'Business type is required' }, { status: 400 })
   if (!location) return NextResponse.json({ error: 'Location is required' }, { status: 400 })
 
   try {
-    const results = await searchBusinesses(businessType, location)
+    let results = await searchBusinesses(businessType, location)
+    if (noWebsiteOnly) results = results.filter(r => !r.website)
     return NextResponse.json({ results: results.map(r => ({ ...r, rating: null, reviewCount: 0 })) })
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'Failed to search businesses' }, { status: 500 })

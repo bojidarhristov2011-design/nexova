@@ -9,12 +9,12 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const { targetBusiness, problem, offer, senderName } = await req.json()
+  const { targetBusiness, problem, offer, senderName, language } = await req.json()
   const settings = await db.userSettings.findUnique({ where: { userId: session.user.id } })
   const businessName = settings?.businessName || 'my business'
   const completion = await groq.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
-    messages: [{ role: 'user', content: `Write a cold email sequence of 3 emails for outreach.
+    messages: [{ role: 'user', content: `Write a cold email sequence of 3 emails for outreach.${language && language !== 'English' ? ` Write ALL emails entirely in ${language}.` : ''}
 
 Sender: ${senderName || businessName}
 Target: ${targetBusiness}

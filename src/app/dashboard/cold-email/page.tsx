@@ -62,6 +62,8 @@ export default function ColdEmailPage() {
   const [bulkOffer, setBulkOffer] = usePersistedState('bulk_offer', '')
   const [bulkProblem, setBulkProblem] = usePersistedState('bulk_problem', '')
   const [bulkTarget, setBulkTarget] = usePersistedState('bulk_target', '')
+  const [bulkLanguage, setBulkLanguage] = usePersistedState('bulk_language', 'English')
+  const [seqLanguage, setSeqLanguage] = usePersistedState('seq_language', 'English')
   const [bulkMode, setBulkMode] = usePersistedState<'ai' | 'custom'>('bulk_mode', 'ai')
   const [customSubject, setCustomSubject] = usePersistedState('bulk_custom_subject', '')
   const [customBody, setCustomBody] = usePersistedState('bulk_custom_body', '')
@@ -79,7 +81,7 @@ export default function ColdEmailPage() {
     if (!targetBusiness || !problem || !offer) return
     setLoading(true); setError('')
     try {
-      const res = await fetch('/api/cold-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetBusiness, problem, offer, senderName }) })
+      const res = await fetch('/api/cold-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetBusiness, problem, offer, senderName, language: seqLanguage }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setResult(data.content)
@@ -134,7 +136,7 @@ export default function ColdEmailPage() {
       const res = await fetch('/api/cold-email/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contacts: [], offer: bulkOffer, problem: bulkProblem, target: bulkTarget, previewOnly: true }),
+        body: JSON.stringify({ contacts: [], offer: bulkOffer, problem: bulkProblem, target: bulkTarget, previewOnly: true, language: bulkLanguage }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -159,6 +161,7 @@ export default function ColdEmailPage() {
           offer: bulkOffer,
           problem: bulkProblem,
           target: bulkTarget,
+          language: bulkLanguage,
           ...(bulkMode === 'custom' ? { customSubject, customBody } : {}),
           ...(bulkMode === 'ai' && bulkPreviewSubject ? { customSubject: bulkPreviewSubject, customBody: bulkPreviewBody } : {}),
         }),
@@ -213,6 +216,11 @@ export default function ColdEmailPage() {
                   <input value={bulkTarget} onChange={e => setBulkTarget(e.target.value)} placeholder="Target: e.g. козметични салони" style={input} />
                   <textarea value={bulkProblem} onChange={e => setBulkProblem(e.target.value)} rows={2} placeholder="Problem: e.g. губят клиенти след първото посещение" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
                   <textarea value={bulkOffer} onChange={e => setBulkOffer(e.target.value)} rows={2} placeholder="Offer: e.g. AI система, която автоматично пише на изчезналите клиенти" style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
+                  <select value={bulkLanguage} onChange={e => { setBulkLanguage(e.target.value); setBulkPreviewSubject(''); setBulkPreviewBody('') }} style={{ ...input, cursor: 'pointer' }}>
+                    {['English', 'Bulgarian', 'German', 'French', 'Spanish', 'Italian', 'Romanian', 'Dutch', 'Polish'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -339,6 +347,11 @@ export default function ColdEmailPage() {
                   <input value={targetBusiness} onChange={e => setTargetBusiness(e.target.value)} placeholder="Target: e.g. yoga studios in London" style={input} />
                   <textarea value={problem} onChange={e => setProblem(e.target.value)} rows={2} placeholder="Problem you solve for them..." style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
                   <textarea value={offer} onChange={e => setOffer(e.target.value)} rows={2} placeholder="Your offer or service..." style={{ ...input, resize: 'vertical', lineHeight: 1.5 }} />
+                  <select value={seqLanguage} onChange={e => setSeqLanguage(e.target.value)} style={{ ...input, cursor: 'pointer' }}>
+                    {['English', 'Bulgarian', 'German', 'French', 'Spanish', 'Italian', 'Romanian', 'Dutch', 'Polish'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               {emails.length > 0 && (

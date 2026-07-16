@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { contacts, offer, problem, target, customSubject, customBody, previewOnly } = await req.json()
+  const { contacts, offer, problem, target, customSubject, customBody, previewOnly, language } = await req.json()
   if (!previewOnly && !contacts?.length) return NextResponse.json({ error: 'No contacts provided' }, { status: 400 })
 
   const settings = await db.userSettings.findUnique({ where: { userId: session.user.id } })
@@ -44,6 +44,7 @@ Rules:
 - Sound like you're texting a business owner you respect, not pitching to a crowd
 - One soft CTA at the end: "Worth a quick chat?" or "Let me know if this is relevant"
 - Sign off with just the sender name, no title
+${language && language !== 'English' ? `- Write the ENTIRE email in ${language}, including the subject line` : ''}
 
 Reply with ONLY this format (nothing else):
 Subject: [subject line]

@@ -20,8 +20,9 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { type, context } = await request.json()
+  const { type, context, language } = await request.json()
   const baseInstruction = TEMPLATES[type] || 'Write a professional business email'
+  const langInstruction = language && language !== 'English' ? `Write the ENTIRE email in ${language}. Subject line must also be in ${language}.` : ''
 
   const prompt = `${baseInstruction}.
 
@@ -32,7 +33,8 @@ Requirements:
 - Concise and clear
 - Ready to send (include Subject line at the top)
 - Do NOT use placeholders like [Name] — write it generically if no name given
-- Format: first line is "Subject: ..." then a blank line then the email body`
+- Format: first line is "Subject: ..." then a blank line then the email body
+${langInstruction}`
 
   try {
     const completion = await groq.chat.completions.create({

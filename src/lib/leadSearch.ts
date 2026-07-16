@@ -22,6 +22,7 @@ const CATEGORY_MAP: Array<{ keywords: string[]; category: string }> = [
   { keywords: ['marketing', 'advertising'], category: 'office.advertising_agency' },
   { keywords: ['real estate', 'estate agent'], category: 'office.estate_agent' },
   { keywords: ['car repair', 'auto repair', 'mechanic'], category: 'service.vehicle.repair.car' },
+  { keywords: ['car detailing', 'detailing', 'car wash', 'carwash'], category: 'service.vehicle' },
 ]
 
 function buildCategory(businessType: string): string {
@@ -42,12 +43,10 @@ export async function searchBusinesses(businessType: string, location: string): 
   const apiKey = process.env.GEOAPIFY_API_KEY
   if (!apiKey) throw new Error('Lead search is not set up — missing GEOAPIFY_API_KEY')
 
-  const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {
-    headers: { 'User-Agent': 'Nexova-LeadFinder/1.0 (contact: bojidarhristov2011@gmail.com)' },
-  })
+  const geoRes = await fetch(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(location)}&limit=1&apiKey=${apiKey}`)
   const geoData = await geoRes.json()
-  if (!geoData?.length) throw new Error(`Could not find location "${location}"`)
-  const { lat, lon } = geoData[0]
+  if (!geoData?.features?.length) throw new Error(`Could not find location "${location}"`)
+  const [lon, lat] = geoData.features[0].geometry.coordinates
 
   const category = buildCategory(businessType)
   const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${lon},${lat},6000&bias=proximity:${lon},${lat}&limit=25&apiKey=${apiKey}`
