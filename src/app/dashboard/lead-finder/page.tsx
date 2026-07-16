@@ -27,6 +27,8 @@ export default function LeadFinderPage() {
   // Selection + optional manual emails
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [emailMap, setEmailMap] = useState<Record<string, string>>({})
+  const [findingEmail, setFindingEmail] = useState<Set<string>>(new Set())
+  const [notFound, setNotFound] = useState<Set<string>>(new Set())
 
   // Outreach
   const [offer, setOffer] = usePersistedState('lf_offer', '')
@@ -69,6 +71,32 @@ export default function LeadFinderPage() {
       else next.add(id)
       return next
     })
+  }
+
+  async function findEmail(r: Business) {
+    if (findingEmail.has(r.placeId) || emailMap[r.placeId]) return
+    setFindingEmail(prev => new Set(prev).add(r.placeId))
+    setNotFound(prev => { const n = new Set(prev); n.delete(r.placeId); return n })
+    try {
+      const res = await fetch('/api/lead-finder/find-email', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: r.name, city: location, website: r.website }),
+      })
+      const data = await res.json()
+      if (data.email) {
+        setEmailMap(prev => ({ ...prev, [r.placeId]: data.email }))
+        setSelected(prev => new Set(prev).add(r.placeId))
+      } else {
+        setNotFound(prev => new Set(prev).add(r.placeId))
+      }
+    } catch { setNotFound(prev => new Set(prev).add(r.placeId)) }
+    setFindingEmail(prev => { const n = new Set(prev); n.delete(r.placeId); return n })
+  }
+
+  async function findAllEmails() {
+    for (const r of results) {
+      if (!emailMap[r.placeId]) await findEmail(r)
+    }
   }
 
   const selectedBusinesses = results.filter(r => selected.has(r.placeId))
@@ -185,11 +213,17 @@ Reply with ONLY the message text, nothing else.`,
           {/* Results */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{results.length} found · {selected.size} selected</span>
-              <button onClick={() => selected.size === results.length ? setSelected(new Set()) : setSelected(new Set(results.map(r => r.placeId)))}
-                style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                {selected.size === results.length ? 'Deselect all' : 'Select all'}
-              </button>
+              <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{results.length} found · {selected.size} selected · {Object.keys(emailMap).length} emails found</span>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button onClick={findAllEmails} disabled={findingEmail.size > 0}
+                  style={{ background: 'transparent', border: 'none', color: '#a78bfa', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0, opacity: findingEmail.size > 0 ? 0.5 : 1 }}>
+                  {findingEmail.size > 0 ? `Finding... (${findingEmail.size} left)` : 'Find all emails'}
+                </button>
+                <button onClick={() => selected.size === results.length ? setSelected(new Set()) : setSelected(new Set(results.map(r => r.placeId)))}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                  {selected.size === results.length ? 'Deselect all' : 'Select all'}
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -232,16 +266,27 @@ Reply with ONLY the message text, nothing else.`,
                           <a href={r.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#a78bfa', fontSize: '0.75rem' }}>{r.website}</a>
                         )}
 
-                        {isSelected && (
-                          <input
-                            type="email"
-                            value={emailMap[r.placeId] || ''}
-                            onChange={e => setEmailMap(prev => ({ ...prev, [r.placeId]: e.target.value }))}
-                            placeholder="Email address (if you found it manually)"
-                            style={{ ...inp, padding: '0.45rem 0.75rem', fontSize: '0.8rem', marginTop: 8 }}
-                            onClick={e => e.stopPropagation()}
-                          />
-                        )}
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }} onClick={e => e.stopPropagation()}>
+                          {emailMap[r.placeId] ? (
+                            <span style={{ fontSize: '0.8rem', color: '#4ade80', fontWeight: 500 }}>✓ {emailMap[r.placeId]}</span>
+                          ) : notFound.has(r.placeId) ? (
+                            <span style={{ fontSize: '0.78rem', color: 'var(--dim)' }}>No email found</span>
+                          ) : (
+                            <button onClick={() => findEmail(r)} disabled={findingEmail.has(r.placeId)}
+                              style={{ background: 'rgba(124,58,237,0.1)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.25)', borderRadius: 6, padding: '3px 10px', fontSize: '0.78rem', fontWeight: 600, cursor: findingEmail.has(r.placeId) ? 'default' : 'pointer', fontFamily: 'inherit', opacity: findingEmail.has(r.placeId) ? 0.6 : 1 }}>
+                              {findingEmail.has(r.placeId) ? 'Searching...' : 'Find email'}
+                            </button>
+                          )}
+                          {(emailMap[r.placeId] || isSelected) && (
+                            <input
+                              type="email"
+                              value={emailMap[r.placeId] || ''}
+                              onChange={e => setEmailMap(prev => ({ ...prev, [r.placeId]: e.target.value }))}
+                              placeholder="or type email manually"
+                              style={{ ...inp, padding: '0.35rem 0.65rem', fontSize: '0.78rem', flex: 1 }}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
