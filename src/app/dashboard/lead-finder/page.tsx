@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { usePersistedState } from '@/hooks/usePersistedState'
 
 const inp: React.CSSProperties = { width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 10, padding: '0.7rem 0.9rem', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit' }
-const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.5rem' }
-const LANGUAGES = ['English', 'Bulgarian', 'German', 'French', 'Spanish', 'Italian', 'Romanian', 'Dutch', 'Polish']
+const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '1.25rem' }
+
+const LANGUAGES = ['Bulgarian', 'English', 'German', 'French', 'Spanish', 'Italian', 'Romanian']
 
 interface Business {
   placeId: string
@@ -16,7 +17,6 @@ interface Business {
 }
 
 export default function LeadFinderPage() {
-  // Search
   const [businessType, setBusinessType] = usePersistedState('lf_type', '')
   const [location, setLocation] = usePersistedState('lf_location', '')
   const [noWebsiteOnly, setNoWebsiteOnly] = useState(false)
@@ -24,23 +24,24 @@ export default function LeadFinderPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Selection + per-business emails
+  // Selection + optional manual emails
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [emailMap, setEmailMap] = useState<Record<string, string>>({})
 
-  // Campaign
+  // Outreach
   const [offer, setOffer] = usePersistedState('lf_offer', '')
-  const [problem, setProblem] = usePersistedState('lf_problem', '')
-  const [language, setLanguage] = usePersistedState('lf_language', 'English')
-  const [mode, setMode] = usePersistedState<'ai' | 'custom'>('lf_mode', 'ai')
-  const [customSubject, setCustomSubject] = usePersistedState('lf_custom_subject', '')
-  const [customBody, setCustomBody] = usePersistedState('lf_custom_body', '')
+  const [language, setLanguage] = usePersistedState('lf_language', 'Bulgarian')
 
-  // Preview + send
-  const [previewSubject, setPreviewSubject] = useState('')
-  const [previewBody, setPreviewBody] = useState('')
-  const [generating, setGenerating] = useState(false)
-  const [sending, setSending] = useState(false)
+  // Script generation
+  const [script, setScript] = useState('')
+  const [generatingScript, setGeneratingScript] = useState(false)
+  const [scriptCopied, setScriptCopied] = useState(false)
+
+  // Email campaign (for those where user manually found email)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
+  const [generatingEmail, setGeneratingEmail] = useState(false)
+  const [sendingEmails, setSendingEmails] = useState(false)
   const [sendResults, setSendResults] = useState<{ name: string; email: string; success: boolean }[]>([])
   const [campaignError, setCampaignError] = useState('')
 
@@ -48,7 +49,7 @@ export default function LeadFinderPage() {
     if (!businessType || !location) return
     setLoading(true); setError(''); setResults([])
     setSelected(new Set()); setEmailMap({})
-    setPreviewSubject(''); setPreviewBody(''); setSendResults([])
+    setScript(''); setEmailSubject(''); setEmailBody(''); setSendResults([])
     try {
       const res = await fetch('/api/lead-finder', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -70,64 +71,93 @@ export default function LeadFinderPage() {
     })
   }
 
-  function setEmail(id: string, val: string) {
-    setEmailMap(prev => ({ ...prev, [id]: val }))
-  }
+  const selectedBusinesses = results.filter(r => selected.has(r.placeId))
+  const readyForEmail = selectedBusinesses.filter(r => emailMap[r.placeId]?.includes('@'))
 
-  function resetPreview() {
-    setPreviewSubject(''); setPreviewBody('')
-  }
-
-  // Businesses that are checked AND have a valid email entered
-  const readyContacts = results
-    .filter(r => selected.has(r.placeId) && emailMap[r.placeId]?.includes('@'))
-    .map(r => ({ name: r.name, email: emailMap[r.placeId] }))
-
-  const needsEmail = selected.size - readyContacts.length
-
-  async function generatePreview() {
-    setGenerating(true); setCampaignError(''); resetPreview()
-    try {
-      const res = await fetch('/api/cold-email/bulk', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contacts: [], offer, problem, target: businessType, previewOnly: true, language }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setPreviewSubject(data.subject)
-      setPreviewBody(data.template)
-    } catch (e: unknown) { setCampaignError(e instanceof Error ? e.message : 'Failed') }
-    setGenerating(false)
-  }
-
-  async function sendEmails() {
-    if (!readyContacts.length) return
-    setSending(true); setCampaignError(''); setSendResults([])
+  async function generateScript() {
+    if (!offer) return
+    setGeneratingScript(true); setScript('')
     try {
       const res = await fetch('/api/cold-email/bulk', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contacts: readyContacts,
-          offer, problem, target: businessType, language,
-          ...(mode === 'custom' ? { customSubject, customBody } : {}),
-          ...(mode === 'ai' && previewSubject ? { customSubject: previewSubject, customBody: previewBody } : {}),
+          contacts: [], offer,
+          problem: 'they have no online presence and lose customers who search online',
+          target: businessType, previewOnly: true, language,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setEmailSubject(data.subject)
+      setEmailBody(data.template)
+    } catch { /* ignore */ }
+    setGeneratingScript(false)
+  }
+
+  async function generateWhatsApp() {
+    if (!offer || selectedBusinesses.length === 0) return
+    setGeneratingScript(true); setScript('')
+    try {
+      const res = await fetch('/api/ai-operator', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            role: 'user',
+            content: `Write a short WhatsApp outreach message in ${language} for a business owner.
+
+My offer: ${offer}
+Target: ${businessType} without a website
+Their problem: they have no website and are invisible online
+
+Rules:
+- Max 4 sentences
+- Casual, human, not salesy
+- Start with their business name as {name}
+- End with a soft question like "Would you be interested in a quick call?"
+- No emojis unless it feels natural
+- Sign with just my name
+
+Reply with ONLY the message text, nothing else.`,
+          }],
+        }),
+      })
+      const data = await res.json()
+      setScript(data.reply || '')
+    } catch { /* ignore */ }
+    setGeneratingScript(false)
+  }
+
+  async function sendEmailCampaign() {
+    if (!readyForEmail.length || !emailSubject || !emailBody) return
+    setSendingEmails(true); setCampaignError(''); setSendResults([])
+    try {
+      const res = await fetch('/api/cold-email/bulk', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contacts: readyForEmail.map(r => ({ name: r.name, email: emailMap[r.placeId] })),
+          offer, language,
+          customSubject: emailSubject,
+          customBody: emailBody,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setSendResults(data.results)
     } catch (e: unknown) { setCampaignError(e instanceof Error ? e.message : 'Failed') }
-    setSending(false)
+    setSendingEmails(false)
   }
 
-  const sentCount = sendResults.filter(r => r.success).length
-  const failedCount = sendResults.filter(r => !r.success).length
+  async function copyScript() {
+    await navigator.clipboard.writeText(script)
+    setScriptCopied(true)
+    setTimeout(() => setScriptCopied(false), 2000)
+  }
 
   return (
     <div style={{ padding: '2.5rem 2rem', maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ marginBottom: '1.75rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 4 }}>Lead Finder</h1>
-        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Find businesses → select them → add their email → generate and send — all in one place.</p>
+        <p style={{ color: 'var(--muted)', fontSize: '0.9rem', margin: 0 }}>Find businesses by type and location, then reach out by phone, WhatsApp, or email.</p>
       </div>
 
       {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 10, padding: '0.875rem 1rem', marginBottom: '1.5rem' }}>{error}</div>}
@@ -141,7 +171,7 @@ export default function LeadFinderPage() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.875rem', cursor: 'pointer', userSelect: 'none' as const }}>
           <input type="checkbox" checked={noWebsiteOnly} onChange={e => setNoWebsiteOnly(e.target.checked)} style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }} />
           <span style={{ fontSize: '0.875rem', color: 'var(--text)', fontWeight: 500 }}>Only show businesses without a website</span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>(great for selling web design)</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--muted)', marginLeft: 2 }}>(sell them web design)</span>
         </label>
         <button onClick={search} disabled={!businessType || !location || loading}
           style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.8rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', width: '100%', opacity: !businessType || !location || loading ? 0.5 : 1 }}>
@@ -152,43 +182,63 @@ export default function LeadFinderPage() {
       {results.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
 
-          {/* Results list */}
+          {/* Results */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{results.length} found · {selected.size} selected · {readyContacts.length} ready to send</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{results.length} found · {selected.size} selected</span>
               <button onClick={() => selected.size === results.length ? setSelected(new Set()) : setSelected(new Set(results.map(r => r.placeId)))}
                 style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
                 {selected.size === results.length ? 'Deselect all' : 'Select all'}
               </button>
             </div>
+
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
               {results.map(r => {
                 const isSelected = selected.has(r.placeId)
                 const hasEmail = emailMap[r.placeId]?.includes('@')
                 return (
                   <div key={r.placeId} onClick={() => toggleSelect(r.placeId)}
-                    style={{ ...card, padding: '0.875rem 1rem', border: `1px solid ${isSelected ? 'rgba(124,58,237,0.4)' : 'var(--border)'}`, background: isSelected ? 'rgba(124,58,237,0.06)' : 'var(--surface)', cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s' }}>
+                    style={{ ...card, border: `1px solid ${isSelected ? 'rgba(124,58,237,0.4)' : 'var(--border)'}`, background: isSelected ? 'rgba(124,58,237,0.06)' : 'var(--surface)', cursor: 'pointer' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(r.placeId)}
                         onClick={e => e.stopPropagation()}
                         style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer', marginTop: 3, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' as const }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' as const }}>
                           <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{r.name}</span>
-                          {!r.website && <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 20, background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', fontWeight: 600, flexShrink: 0 }}>No website</span>}
-                          {isSelected && hasEmail && <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 20, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', fontWeight: 600, flexShrink: 0 }}>Ready</span>}
+                          {!r.website && <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 20, background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.25)', fontWeight: 600 }}>No website</span>}
+                          {hasEmail && <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 20, background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)', fontWeight: 600 }}>Email ready</span>}
                         </div>
-                        <div style={{ color: 'var(--muted)', fontSize: '0.8rem', marginBottom: isSelected ? 8 : 0 }}>
-                          {[r.phone, r.address].filter(Boolean).join(' · ')}
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' as const }}>
+                          {r.phone && (
+                            <a href={`tel:${r.phone}`} onClick={e => e.stopPropagation()}
+                              style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#a78bfa', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+                              📞 {r.phone}
+                            </a>
+                          )}
+                          {r.phone && (
+                            <a href={`https://wa.me/${r.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#4ade80', fontSize: '0.8rem', fontWeight: 500, textDecoration: 'none' }}>
+                              WhatsApp →
+                            </a>
+                          )}
+                          {!r.phone && <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>No phone listed</span>}
                         </div>
-                        {r.website && !isSelected && <a href={r.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#a78bfa', fontSize: '0.78rem' }}>{r.website}</a>}
+
+                        <div style={{ color: 'var(--dim)', fontSize: '0.78rem', marginTop: 4 }}>{r.address}</div>
+
+                        {r.website && (
+                          <a href={r.website} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: '#a78bfa', fontSize: '0.75rem' }}>{r.website}</a>
+                        )}
+
                         {isSelected && (
                           <input
                             type="email"
                             value={emailMap[r.placeId] || ''}
-                            onChange={e => setEmail(r.placeId, e.target.value)}
-                            placeholder="Enter their email address..."
-                            style={{ ...inp, padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
+                            onChange={e => setEmailMap(prev => ({ ...prev, [r.placeId]: e.target.value }))}
+                            placeholder="Email address (if you found it manually)"
+                            style={{ ...inp, padding: '0.45rem 0.75rem', fontSize: '0.8rem', marginTop: 8 }}
                             onClick={e => e.stopPropagation()}
                           />
                         )}
@@ -200,102 +250,86 @@ export default function LeadFinderPage() {
             </div>
           </div>
 
-          {/* Campaign panel */}
+          {/* Outreach panel */}
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1rem', position: 'sticky' as const, top: 24 }}>
+
+            {/* Settings */}
             <div style={card}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginTop: 0, marginBottom: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>Email Campaign</span>
-                {readyContacts.length > 0 && <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#a78bfa' }}>{readyContacts.length} ready</span>}
-              </h2>
-
-              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                {(['ai', 'custom'] as const).map(m => (
-                  <button key={m} onClick={() => { setMode(m); resetPreview() }}
-                    style={{ flex: 1, padding: '6px', borderRadius: 8, border: `1px solid ${mode === m ? 'var(--accent)' : 'var(--border)'}`, background: mode === m ? 'rgba(124,58,237,0.12)' : 'transparent', color: mode === m ? '#a78bfa' : 'var(--muted)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    {m === 'ai' ? 'AI writes it' : 'I write it'}
-                  </button>
-                ))}
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: 0, marginBottom: '0.875rem' }}>Outreach Settings</h2>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                <textarea value={offer} onChange={e => setOffer(e.target.value)} rows={2}
+                  placeholder="Your offer: e.g. I build websites in 5 days for €500" style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }} />
+                <select value={language} onChange={e => setLanguage(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+                  {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
               </div>
+            </div>
 
-              {mode === 'ai' ? (
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                  <textarea value={problem} onChange={e => { setProblem(e.target.value); resetPreview() }} rows={2}
-                    placeholder="Problem they have: e.g. no website, losing customers online" style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }} />
-                  <textarea value={offer} onChange={e => { setOffer(e.target.value); resetPreview() }} rows={2}
-                    placeholder="Your offer: e.g. I build websites in 5 days for €500" style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.5 }} />
-                  <select value={language} onChange={e => { setLanguage(e.target.value); resetPreview() }} style={{ ...inp, cursor: 'pointer' }}>
-                    {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                  <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} placeholder="Subject line" style={inp} />
-                  <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} rows={7}
-                    placeholder={'Write your email...\n\nUse {name} to personalise.'} style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.6 }} />
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--muted)' }}>Use <code style={{ background: 'var(--bg2)', padding: '1px 4px', borderRadius: 4 }}>{'{name}'}</code> to insert each business name</p>
+            {/* WhatsApp / call script */}
+            <div style={card}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: 0, marginBottom: 6 }}>WhatsApp / Call Script</h2>
+              <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: '0 0 12px' }}>
+                Businesses without websites → reach them by phone or WhatsApp. Click the number above to call instantly.
+              </p>
+              <button onClick={generateWhatsApp} disabled={generatingScript || !offer}
+                style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 10, padding: '0.7rem', fontSize: '0.875rem', fontWeight: 600, cursor: generatingScript || !offer ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', opacity: generatingScript || !offer ? 0.5 : 1 }}>
+                {generatingScript ? 'Generating...' : 'Generate WhatsApp message'}
+              </button>
+
+              {script && (
+                <div style={{ marginTop: 12 }}>
+                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text)', fontSize: '0.85rem', lineHeight: 1.7, margin: '0 0 10px', background: 'var(--bg2)', borderRadius: 8, padding: '0.75rem' }}>{script}</pre>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={copyScript}
+                      style={{ flex: 1, background: scriptCopied ? 'rgba(34,197,94,0.12)' : 'var(--bg2)', color: scriptCopied ? '#4ade80' : 'var(--muted)', border: `1px solid ${scriptCopied ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.5rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {scriptCopied ? '✓ Copied' : 'Copy'}
+                    </button>
+                    <button onClick={generateWhatsApp} disabled={generatingScript}
+                      style={{ background: 'var(--bg2)', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem 0.75rem', fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      Redo
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* AI preview */}
-            {previewSubject && mode === 'ai' && !sendResults.length && (
-              <div style={card}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>Email preview</span>
-                  <button onClick={resetPreview} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem', fontFamily: 'inherit' }}>Regenerate</button>
-                </div>
-                <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '7px 12px', marginBottom: 8, fontSize: '0.8rem', color: 'var(--muted)' }}>
-                  Subject: <strong style={{ color: 'var(--text)' }}>{previewSubject}</strong>
-                </div>
-                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text)', fontSize: '0.8rem', lineHeight: 1.7, margin: 0 }}>{previewBody}</pre>
-              </div>
-            )}
-
-            {/* Send results */}
-            {sendResults.length > 0 && (
-              <div style={card}>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-                  {sentCount > 0 && <span style={{ color: '#4ade80', fontWeight: 700, fontSize: '0.9rem' }}>✓ {sentCount} sent</span>}
-                  {failedCount > 0 && <span style={{ color: '#fca5a5', fontWeight: 700, fontSize: '0.9rem' }}>✗ {failedCount} failed</span>}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-                  {sendResults.map((r, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem' }}>
-                      <span style={{ color: r.success ? '#4ade80' : '#fca5a5' }}>{r.success ? '✓' : '✗'}</span>
-                      <span style={{ color: 'var(--text)', flex: 1 }}>{r.name}</span>
-                      <span style={{ color: 'var(--muted)' }}>{r.email}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {campaignError && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#fca5a5', borderRadius: 10, padding: '0.75rem 1rem', fontSize: '0.875rem' }}>{campaignError}</div>}
-
-            {/* Generate button */}
-            {mode === 'ai' && !previewSubject && (
-              <button onClick={generatePreview} disabled={generating || !offer || !problem}
-                style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: generating || !offer || !problem ? 'default' : 'pointer', fontFamily: 'inherit', opacity: generating || !offer || !problem ? 0.5 : 1 }}>
-                {generating ? 'Generating...' : 'Generate Email'}
-              </button>
-            )}
-
-            {/* Send button */}
-            {(mode === 'custom' || previewSubject) && (() => {
-              const disabled = sending || !readyContacts.length || (mode === 'custom' && (!customSubject || !customBody))
-              return (
-                <button onClick={sendEmails} disabled={disabled}
-                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', opacity: disabled ? 0.5 : 1 }}>
-                  {sending ? `Sending to ${readyContacts.length}...` : readyContacts.length ? `Send to ${readyContacts.length} business${readyContacts.length !== 1 ? 'es' : ''}` : 'Select businesses + add their emails'}
-                </button>
-              )
-            })()}
-
-            {needsEmail > 0 && (
-              <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: 0, textAlign: 'center' as const }}>
-                {needsEmail} selected {needsEmail === 1 ? 'business needs' : 'businesses need'} an email address to be included
+            {/* Email section (for manually-found emails) */}
+            <div style={card}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: 0, marginBottom: 6 }}>Email Campaign</h2>
+              <p style={{ fontSize: '0.78rem', color: 'var(--muted)', margin: '0 0 10px' }}>
+                Found emails manually? Select businesses above and enter their emails to send a campaign.
               </p>
-            )}
+
+              {!emailSubject && (
+                <button onClick={generateScript} disabled={generatingScript || !offer}
+                  style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem', fontSize: '0.875rem', fontWeight: 600, cursor: generatingScript || !offer ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', opacity: generatingScript || !offer ? 0.5 : 1 }}>
+                  {generatingScript ? 'Generating...' : 'Generate email'}
+                </button>
+              )}
+
+              {emailSubject && (
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '7px 12px', fontSize: '0.8rem', color: 'var(--muted)' }}>
+                    Subject: <strong style={{ color: 'var(--text)' }}>{emailSubject}</strong>
+                  </div>
+                  <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text)', fontSize: '0.8rem', lineHeight: 1.7, margin: 0, background: 'var(--bg2)', borderRadius: 8, padding: '0.75rem' }}>{emailBody}</pre>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={generateScript} style={{ background: 'var(--bg2)', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.45rem 0.75rem', fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'inherit' }}>Regenerate</button>
+                  </div>
+                  {campaignError && <div style={{ color: '#fca5a5', fontSize: '0.8rem' }}>{campaignError}</div>}
+                  {sendResults.length > 0 && (
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ color: '#4ade80', fontWeight: 600, fontSize: '0.875rem' }}>✓ {sendResults.filter(r => r.success).length} sent</span>
+                      {sendResults.filter(r => !r.success).length > 0 && <span style={{ color: '#fca5a5', fontWeight: 600, fontSize: '0.875rem' }}>✗ {sendResults.filter(r => !r.success).length} failed</span>}
+                    </div>
+                  )}
+                  <button onClick={sendEmailCampaign} disabled={sendingEmails || !readyForEmail.length}
+                    style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem', fontSize: '0.875rem', fontWeight: 600, cursor: sendingEmails || !readyForEmail.length ? 'default' : 'pointer', fontFamily: 'inherit', opacity: sendingEmails || !readyForEmail.length ? 0.5 : 1 }}>
+                    {sendingEmails ? 'Sending...' : readyForEmail.length ? `Send to ${readyForEmail.length} business${readyForEmail.length !== 1 ? 'es' : ''}` : 'Add emails above to send'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
