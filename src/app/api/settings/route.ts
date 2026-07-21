@@ -33,6 +33,11 @@ export async function PUT(request: Request) {
       ...(body.autoReplyOnLeadCapture !== undefined ? { autoReplyOnLeadCapture: body.autoReplyOnLeadCapture } : {}),
       ...(body.emailFrom !== undefined ? { emailFrom: body.emailFrom } : {}),
       ...(body.emailPassword !== undefined ? { emailPassword: body.emailPassword } : {}),
+      ...(body.receptionistEnabled !== undefined ? { receptionistEnabled: body.receptionistEnabled } : {}),
+      receptionistName:        body.receptionistName        ?? undefined,
+      receptionistHours:       body.receptionistHours       ?? undefined,
+      receptionistServices:    body.receptionistServices    ?? undefined,
+      receptionistBookingLink: body.receptionistBookingLink ?? undefined,
     },
     create: {
       userId:          session.user.id,
@@ -44,6 +49,11 @@ export async function PUT(request: Request) {
       contentTone:     body.contentTone     ?? 'professional',
       autoNurtureOnLead:      body.autoNurtureOnLead      ?? false,
       autoReplyOnLeadCapture: body.autoReplyOnLeadCapture ?? false,
+      receptionistEnabled:    body.receptionistEnabled    ?? false,
+      receptionistName:        body.receptionistName        ?? 'Assistant',
+      receptionistHours:       body.receptionistHours       ?? '',
+      receptionistServices:    body.receptionistServices    ?? '',
+      receptionistBookingLink: body.receptionistBookingLink ?? '',
     },
   })
   return NextResponse.json(settings)

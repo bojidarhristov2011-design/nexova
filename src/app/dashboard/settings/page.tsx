@@ -23,6 +23,11 @@ export default function SettingsPage() {
     telegramChannel: '', tiktokHandle: '', contentTone: 'professional',
     autoNurtureOnLead: false, autoReplyOnLeadCapture: false,
     emailFrom: '', emailPassword: '',
+    receptionistEnabled: false,
+    receptionistName: '',
+    receptionistHours: '',
+    receptionistServices: '',
+    receptionistBookingLink: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -295,6 +300,52 @@ export default function SettingsPage() {
             style={{ background: 'linear-gradient(135deg, var(--accent), var(--accent2))', color: '#fff', border: 'none', borderRadius: 10, padding: '0 1.25rem', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const, opacity: !newBizName || addingBiz ? 0.5 : 1 }}>
             + Add
           </button>
+        </div>
+      </div>
+
+      {/* AI Receptionist */}
+      <div style={card}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>🤖 AI Receptionist</h2>
+          <div onClick={() => set('receptionistEnabled', !form.receptionistEnabled)}
+            style={{ width: 40, height: 22, background: form.receptionistEnabled ? 'rgba(124,58,237,0.7)' : 'var(--bg2)', border: `1px solid ${form.receptionistEnabled ? 'rgba(124,58,237,0.5)' : 'var(--border)'}`, borderRadius: 99, position: 'relative' as const, transition: 'all 0.2s', cursor: 'pointer', flexShrink: 0 }}>
+            <div style={{ position: 'absolute' as const, top: 2, left: form.receptionistEnabled ? 20 : 2, width: 16, height: 16, background: '#fff', borderRadius: '50%', transition: 'left 0.2s' }} />
+          </div>
+        </div>
+        <p style={{ color: 'var(--dim)', fontSize: '0.8125rem', marginBottom: '1rem', marginTop: 0 }}>
+          When someone fills your Lead Capture form, the AI instantly replies on your behalf — 24/7, even at 2am.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '0.875rem', opacity: form.receptionistEnabled ? 1 : 0.4, pointerEvents: form.receptionistEnabled ? 'auto' : 'none' }}>
+          <div>
+            <span style={lbl}>AI name (how it signs off)</span>
+            <input style={inp} value={form.receptionistName} onChange={e => set('receptionistName', e.target.value)} placeholder="e.g. Виктория, Салон Виктория" />
+          </div>
+          <div>
+            <span style={lbl}>Services you offer</span>
+            <textarea rows={2} style={{ ...inp, resize: 'vertical' as const, lineHeight: 1.6 }}
+              value={form.receptionistServices} onChange={e => set('receptionistServices', e.target.value)}
+              placeholder="e.g. Нокти, вежди, мигли. Цени от 30 до 80 лв." />
+            <p style={hint}>The AI mentions these when someone asks about pricing or services.</p>
+          </div>
+          <div>
+            <span style={lbl}>Working hours</span>
+            <input style={inp} value={form.receptionistHours} onChange={e => set('receptionistHours', e.target.value)}
+              placeholder="e.g. Понеделник–Събота, 10:00–19:00" />
+          </div>
+          <div>
+            <span style={lbl}>Booking link (optional)</span>
+            <input style={inp} value={form.receptionistBookingLink} onChange={e => set('receptionistBookingLink', e.target.value)}
+              placeholder="e.g. https://booksy.com/yoursalon" />
+            <p style={hint}>If you have an online booking system, the AI will include this link in the reply.</p>
+          </div>
+          {form.receptionistEnabled && form.receptionistName && (
+            <div style={{ background: 'rgba(124,58,237,0.07)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: '0.875rem 1rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--muted)', margin: '0 0 6px', fontWeight: 600 }}>Preview reply:</p>
+              <p style={{ fontSize: '0.8375rem', color: 'var(--text)', margin: 0, lineHeight: 1.7 }}>
+                Здравейте! Благодаря, че се свързахте с нас.{form.receptionistServices ? ` Предлагаме: ${form.receptionistServices}.` : ''}{form.receptionistHours ? ` Работим ${form.receptionistHours}.` : ''}{form.receptionistBookingLink ? ` Запазете час тук: ${form.receptionistBookingLink}` : ' Ще се свържем с вас скоро.'}<br /><br />— {form.receptionistName}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
